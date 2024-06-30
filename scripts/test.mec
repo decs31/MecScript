@@ -1,0 +1,240 @@
+// Test Script
+
+#define DEFINITION 10
+
+// String
+/*
+println("\n\n--- String Test ---");
+string str = "Hello World";
+println(str);
+*/
+int notUsed;
+// Ternary
+//println("\n\n--- Ternary ---");
+int tt = 51;
+//int ternary = tt < 55 ? 100.1 : 99.9;
+//printi(ternary);
+printi(tt < 55 ? 100 : 99); // << Not working properly
+
+
+/*
+const int writeOnce;
+printi(writeOnce);
+//writeOnce += (2 + 2);
+printi(writeOnce);
+*/
+
+// Binary
+/*
+float a = 128;
+//byte b = ~a & 0xF0;
+//printi(b);
+printi(++a);
+printi(a);
+*/
+
+// Array Test
+/*
+byte myArray[10] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+myArray[0] += 100;
+myArray[9] = 5;
+myArray[9] *= myArray[2];
+
+void printArray() {
+    //ushort myArray[] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+    //myArray[2] = 500;
+
+    for (int i = 0; i < 10; ++i) {
+        printi(myArray[i]);
+    }
+}
+
+printArray();
+*/
+
+// Float Test
+/*
+int addMe = 100.0;
+addMe += 55.5;
+printf(addMe);
+printf((addMe << 2));
+*/
+
+// Class Test
+/*
+int created = 0;
+int deleted = 0;
+
+class SubClass {
+    int SubVal = 10101;
+    SubClass() {
+        printi(SubVal * 2);
+    }
+}
+
+class Object {
+    int val0 = 100;
+    int val1 = 101;
+    int val2 = 102;
+    int val3 = 103;
+
+    SubClass sub();
+
+    //byte myArray[] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+
+    void PrintVal(int x) {
+       printi(val1 + x);
+    }
+
+    int val4 = 104;
+
+    Object(int val) {
+        val1 = val;
+        created++;
+    }
+
+    ~Object() {
+        deleted++;
+    }
+}
+
+//Object inst;
+Object inst(555);
+printi(created);
+printi(inst.val0);
+printi(inst.val1);
+printi(inst.val2);
+printi(inst.val3);
+printi(inst.sub.SubVal);
+printi(inst.val4);
+inst.val1 /= 2;
+printi(inst.val1);
+inst.PrintVal(1000);
+//inst.myArray[2] = 222;
+//printi(inst.myArray[2]);
+
+void stuff() {
+    printi(666666);
+    printi(created);
+    Object another(999);
+    printi(created);
+    another.PrintVal(100);
+
+    printi(inst.val0);
+    printi(inst.val1);
+    //inst.PrintVal(100);
+    inst.val1 *= 2;
+    inst.PrintVal(300);
+    //printi(inst.val1);
+    //another.PrintVal(0);
+}
+
+stuff();
+
+printi(888888);
+printi(created);
+printi(deleted);
+//printi(inst.val4);
+//inst.PrintVal(0);
+*/
+
+
+// Math Test
+/*
+int someVal = 15 % 4;
+printi(someVal += 4);
+int inc = ++someVal + 1;
+
+printi(someVal);
+printi(inc);
+*/
+
+
+// Switch Test
+/*
+int switchTest = 0;
+printi(switchTest);
+
+while(switchTest < 10) {
+    printi(switchTest);
+    switch(switchTest) {
+        //case 0:
+        //    printi(1000);
+        //    break;
+        case 9:
+            printi(900);
+            break;
+
+        case 3:
+        case 4: {
+            printi(330);
+            printi(340);
+            }
+
+        default:
+            printi(-1);
+            break;
+    }
+    ++switchTest;
+}
+printi(666);
+*/
+
+/*
+int doStuff(int a, int b) {
+    for (float x = 0; x < 10; x = x + 1.6) {
+        if (x == 3.2) {
+            printf(x * b + a);
+            continue;
+        }
+        if (x >= 6.4)
+            break;
+        printf(x);
+    }
+
+    return a + b + someVal;
+}
+
+print (doStuff(100, 200));
+*/
+
+// Stress Test!
+/*
+println(" ");
+println("--- Stress Test: Fib ---");
+int fib(int n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
+}
+
+int start = clock();
+int fibResult = fib(35);
+int end = clock();
+print("Result = ");
+printi(fibResult);
+print("Time (ms): ");
+printi(end - start);
+
+//printi(doStuff(1, 2));
+*/
+
+/*
+void pause(int ms) {
+    int start = clock();
+    int t = 0;
+    while(t < ms) t = clock() - start;
+}
+
+int time = clock();
+int last;
+print (time);
+for (int tc = clock() - time; tc < 5000; tc = clock() - time) {
+    printi(tc - last);
+    pause(500);
+    last = tc;
+}
+
+//fib(35);
+
+printi(1111);
+*/
