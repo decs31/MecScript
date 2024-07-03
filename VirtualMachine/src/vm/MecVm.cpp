@@ -343,7 +343,7 @@ void MecVm::Run(ProgramInfo *program) {
             }
 
                 // Binary
-            case OP_ADD: {
+            case OP_ADD_S: {
                 OP_BINARY(+, INT32_VAL, AS_INT32);
                 break;
             }
@@ -351,27 +351,27 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(+, FLOAT_VAL, AS_FLOAT);
                 break;
             }
-            case OP_SUBTRACT: {
+            case OP_SUB_S: {
                 OP_BINARY(-, INT32_VAL, AS_INT32);
                 break;
             }
-            case OP_SUBTRACT_F: {
+            case OP_SUB_F: {
                 OP_BINARY(-, FLOAT_VAL, AS_FLOAT);
                 break;
             }
-            case OP_MULTIPLY: {
+            case OP_MULT_S: {
                 OP_BINARY(*, INT32_VAL, AS_INT32);
                 break;
             }
-            case OP_MULTIPLY_F: {
+            case OP_MULT_F: {
                 OP_BINARY(*, FLOAT_VAL, AS_FLOAT);
                 break;
             }
-            case OP_DIVIDE: {
+            case OP_DIV_S: {
                 OP_BINARY(/, INT32_VAL, AS_INT32);
                 break;
             }
-            case OP_DIVIDE_F: {
+            case OP_DIV_F: {
                 OP_BINARY(/, FLOAT_VAL, AS_FLOAT);
                 break;
             }
@@ -401,11 +401,11 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(^, INT32_VAL, AS_INT32);
                 break;
             }
-            case OP_BIT_SHIFT_LEFT: {
+            case OP_BIT_SHIFT_L: {
                 OP_BINARY(<<, INT32_VAL, AS_INT32);
                 break;
             }
-            case OP_BIT_SHIFT_RIGHT: {
+            case OP_BIT_SHIFT_R: {
                 OP_BINARY(>>, INT32_VAL, AS_INT32);
                 break;
             }
@@ -416,56 +416,56 @@ void MecVm::Run(ProgramInfo *program) {
                 break;
             }
 
-            case OP_IS_EQUAL: {
+            case OP_EQUAL_S: {
                 OP_BINARY(==, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_EQUAL_F: {
+            case OP_EQUAL_F: {
                 OP_BINARY(==, BOOL_VAL, AS_FLOAT);
                 break;
             }
 
-            case OP_IS_NOT_EQUAL: {
+            case OP_NOT_EQUAL_S: {
                 OP_BINARY(!=, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_NOT_EQUAL_F: {
+            case OP_NOT_EQUAL_F: {
                 OP_BINARY(!=, BOOL_VAL, AS_FLOAT);
                 break;
             }
 
-            case OP_IS_LESS: {
+            case OP_LESS_S: {
                 OP_BINARY(<, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_LESS_F: {
+            case OP_LESS_F: {
                 OP_BINARY(<, BOOL_VAL, AS_FLOAT);
                 break;
             }
 
-            case OP_IS_LESS_OR_EQUAL: {
+            case OP_LESS_OR_EQUAL_S: {
                 OP_BINARY(<=, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_LESS_OR_EQUAL_F: {
+            case OP_LESS_OR_EQUAL_F: {
                 OP_BINARY(<=, BOOL_VAL, AS_FLOAT);
                 break;
             }
 
-            case OP_IS_GREATER: {
+            case OP_GREATER_S: {
                 OP_BINARY(>, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_GREATER_F: {
+            case OP_GREATER_F: {
                 OP_BINARY(>, BOOL_VAL, AS_FLOAT);
                 break;
             }
 
-            case OP_IS_GREATER_OR_EQUAL: {
+            case OP_GREATER_OR_EQUAL_S: {
                 OP_BINARY(>=, BOOL_VAL, AS_INT32);
                 break;
             }
-            case OP_IS_GREATER_OR_EQUAL_F: {
+            case OP_GREATER_OR_EQUAL_F: {
                 OP_BINARY(>=, BOOL_VAL, AS_FLOAT);
                 break;
             }
@@ -925,51 +925,4 @@ void MecVm::DecrementValue(const VmPointer &pointer, bool push) {
 
     if (push)
         Push(*value);
-}
-
-void MecVm::AssignVariable(opCode_t assignOp, const VmPointer &pointer) {
-
-    Value *value = FindVariable(pointer);
-    Value operand = Pop();
-
-#define ASSIGN(op, inType) \
-    if(dataType == dtFloat) \
-        value->As.Float op (float)inType(operand); \
-    else                 \
-        value->As.Int op (int)inType(operand)
-
-    switch (assignOp) {
-        case OP_PLUS_EQUALS:
-            value->Int += (int) AS_INT32(operand);
-            break;
-        case OP_PLUS_EQUALS_F:
-            value->Float += (float) AS_FLOAT(operand);
-            break;
-        case OP_MINUS_EQUALS:
-            value->Int -= (int) AS_INT32(operand);
-            break;
-        case OP_MINUS_EQUALS_F:
-            value->Float -= (float) AS_FLOAT(operand);
-            break;
-        case OP_TIMES_EQUALS:
-            value->Int *= (int) AS_INT32(operand);
-            break;
-        case OP_TIMES_EQUALS_F:
-            value->Float *= (float) AS_FLOAT(operand);
-            break;
-        case OP_DIVIDE_EQUALS:
-            value->Int /= (int) AS_INT32(operand);
-            break;
-        case OP_DIVIDE_EQUALS_F:
-            value->Float /= (float) AS_FLOAT(operand);
-            break;
-            // TODO: Bitwise operations
-        default:
-            *value = operand;
-            break;
-    }
-
-#undef ASSIGN
-
-    Push(*value);
 }

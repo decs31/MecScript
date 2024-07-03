@@ -2,20 +2,33 @@
 
 #define DEFINITION 10
 
+/*
+println("=== Function Test ===");
+
+void funcky() {
+    println("funcky!");
+}
+
+funcky();
+*/
+
 // String
 /*
 println("\n\n--- String Test ---");
 string str = "Hello World";
 println(str);
 */
+
+/*
 int notUsed;
 // Ternary
 //println("\n\n--- Ternary ---");
 int tt = 51;
 //int ternary = tt < 55 ? 100.1 : 99.9;
 //printi(ternary);
-printi(tt < 55 ? 100 : 99); // << Not working properly
-
+tt += 1;
+printf(tt < 55 ? 100 : 99);
+//*/
 
 /*
 const int writeOnce;
@@ -34,7 +47,7 @@ printi(a);
 */
 
 // Array Test
-/*
+print("=== Array Test ===");
 byte myArray[10] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 myArray[0] += 100;
 myArray[9] = 5;
@@ -43,14 +56,14 @@ myArray[9] *= myArray[2];
 void printArray() {
     //ushort myArray[] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
     //myArray[2] = 500;
-
+    print("print array");
     for (int i = 0; i < 10; ++i) {
         printi(myArray[i]);
     }
 }
 
 printArray();
-*/
+//*/
 
 // Float Test
 /*

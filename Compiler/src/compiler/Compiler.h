@@ -120,6 +120,7 @@ private:
     std::vector<VariableInfo> m_Globals;
     int m_ScopeDepth = 0;
     u32 m_LocalsMax = 0;
+    VariableInfo *m_CurrentArray = nullptr;
     VarScopeType CurrentScope() const;
 
     VariableInfo *CreateVariable(const string &name, VarScopeType scope, DataType dataType, u32 flags);
@@ -241,6 +242,16 @@ private:
     void EmitGetFromOffset(DataType dataType, DataType outputType);
     void EmitSetAtOffset(DataType dataType, DataType inputType);
     void EmitCast(TypeCompatibility castMode, bool previous = false);
+    void EmitAdd(DataType type);
+    void EmitSubtract(DataType type);
+    void EmitMultiply(DataType type);
+    void EmitDivide(DataType type);
+    void EmitEqual(DataType type);
+    void EmitNotEqual(DataType type);
+    void EmitLessThan(DataType type);
+    void EmitLessThanOrEqual(DataType type);
+    void EmitGreaterThan(DataType type);
+    void EmitGreaterThanOrEqual(DataType type);
     int EmitArray();
     void EmitString(const string &str);
     void PatchArray(int offset, int size);

@@ -10,9 +10,12 @@
 
 enum TypeCompatibility {
     tcIncompatible,
-    tcCastable,
-    tcCastIntToFloat,
-    tcCastFloatToInt,
+    tcCastSignedToUnsigned,
+    tcCastSignedToFloat,
+    tcCastUnsignedToSigned,
+    tcCastUnsignedToFloat,
+    tcCastFloatToUnsigned,
+    tcCastFloatToSigned,
     tcMatch,
     tcNotApplicable,
 };

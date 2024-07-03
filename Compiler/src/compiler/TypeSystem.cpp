@@ -13,16 +13,23 @@ TypeCompatibility TypeInfo::CheckCompatibility(DataType expecting, DataType inpu
 
     if (expecting >= dtBool && expecting <= dtInt32) {
         if (input >= dtBool && input <= dtInt32) return tcMatch;
-        if (input == dtFloat) return tcCastFloatToInt;
+        if (input == dtUint32) return tcCastUnsignedToSigned;
+        if (input == dtFloat) return tcCastFloatToSigned;
+    }
+
+    if (expecting == dtUint32) {
+        if (input == dtFloat) return tcCastFloatToUnsigned;
+        else return tcCastSignedToUnsigned;
     }
 
     if (expecting == dtFloat) {
-        if (input >= dtBool && input <= dtInt32) return tcCastIntToFloat;
+        if (input >= dtBool && input <= dtInt32) return tcCastSignedToFloat;
+        return tcCastUnsignedToFloat;
     }
 
     if (expecting == dtPointer) {
         if (input >= dtInt8 && input <= dtInt32) return tcMatch;
-        if (input == dtFloat) return tcCastFloatToInt;
+        if (input == dtFloat) return tcCastFloatToSigned;
     }
 
     return tcIncompatible;

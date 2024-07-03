@@ -122,8 +122,10 @@ string ErrorHandler::FormattedErrorMessage(const std::string &line, size_t lineN
     if (err.at(err.length() - 1) != '\n')
         err += '\n';
 
-    for (size_t i = 0; i < errorPos - 1; i ++) {
-        err += ' ';
+    if (errorPos > 0) {
+        for (size_t i = 0; i < errorPos - 1; i++) {
+            err += ' ';
+        }
     }
     err += "^-- Here\n";
     err += message;

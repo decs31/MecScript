@@ -463,14 +463,8 @@ void Compiler::RunParserFunction(ParseFunc func, bool canAssign) {
         case fnString:
             String();
             break;
-        case fnVariablePrefix:
-            VariablePrefix();
-            break;
         case fnVariable:
             Variable(canAssign);
-            break;
-        case fnVariablePostfix:
-            VariablePostfix(canAssign);
             break;
         case fnAnd:
             And();
@@ -478,14 +472,20 @@ void Compiler::RunParserFunction(ParseFunc func, bool canAssign) {
         case fnOr:
             Or();
             break;
+        case fnTernary:
+            Ternary();
+            break;
         case fnCall:
             Call();
             break;
         case fnArrayIndex:
             PointerIndex(canAssign);
             break;
-        case fnTernary:
-            Ternary();
+        case fnVariablePrefix:
+            VariablePrefix();
+            break;
+        case fnVariablePostfix:
+            VariablePostfix(canAssign);
             break;
 
         default:
@@ -817,8 +817,12 @@ TypeCompatibility Compiler::TypeCheck(DataType type, const string &errorMessage)
 
     DataType expecting = CurrentType();
     auto compat = TypeInfo::CheckCompatibility(expecting, type);
-    if (compat == tcIncompatible && !errorMessage.empty()) {
-        AddError(errorMessage, LookBack());
+    if (compat == tcIncompatible) {
+        if (!errorMessage.empty()) {
+            AddError(errorMessage, LookBack());
+        } else {
+            AddError("Incompatible type. Expected '" + DataTypeToString(expecting) + "'.", LookBack());
+        }
     }
 
     return compat;
@@ -920,11 +924,11 @@ void Compiler::NumericLiteral() {
 
     TypeCompatibility compat = TypeCheck(literal.Type);
 
-    if (compat == tcCastIntToFloat) {
+    if (compat == tcCastSignedToFloat) {
         string msg = "Integer literal will be implicitly cast to surrounding float type.\n";
         msg += "Add decimal place(s) to specify a floating point literal.";
         AddWarning(msg, LookBack());
-    } else if (compat == tcCastFloatToInt) {
+    } else if (compat == tcCastFloatToSigned) {
         string msg = "Floating point literal will be implicitly cast to surrounding integer type.\n";
         msg += "Remove decimal place(s) to specify a integer literal.";
         AddWarning(msg, LookBack());
@@ -1115,21 +1119,21 @@ void Compiler::Binary() {
         // Term
         case tknPlus:
         case tknPlusEquals:
-            EmitByte(binaryType == dtFloat ? OP_ADD_F : OP_ADD);
+            EmitAdd(binaryType);
             break;
         case tknMinus:
         case tknMinusEquals:
-            EmitByte(binaryType == dtFloat ? OP_SUBTRACT_F : OP_SUBTRACT);
+            EmitSubtract(binaryType);
             break;
 
             // Factor
         case tknStar:
         case tknTimesEquals:
-            EmitByte(binaryType == dtFloat ? OP_MULTIPLY_F : OP_MULTIPLY);
+            EmitMultiply(binaryType);
             break;
         case tknSlash:
         case tknDivideEquals:
-            EmitByte(binaryType == dtFloat ? OP_DIVIDE_F : OP_DIVIDE);
+            EmitDivide(binaryType);
             break;
         case tknPercent:
             EmitByte(OP_MODULUS);
@@ -1137,22 +1141,22 @@ void Compiler::Binary() {
 
             // Comparison
         case tknEquals:
-            EmitByte(binaryType == dtFloat ? OP_IS_EQUAL_F : OP_IS_EQUAL);
+            EmitEqual(binaryType);
             break;
         case tknNotEqual:
-            EmitByte(binaryType == dtFloat ? OP_IS_NOT_EQUAL_F : OP_IS_NOT_EQUAL);
+            EmitNotEqual(binaryType);
             break;
         case tknLessThan:
-            EmitByte(binaryType == dtFloat ? OP_IS_LESS_F : OP_IS_LESS);
+            EmitLessThan(binaryType);
             break;
         case tknLessEqual:
-            EmitByte(binaryType == dtFloat ? OP_IS_LESS_OR_EQUAL_F : OP_IS_LESS_OR_EQUAL);
+            EmitLessThanOrEqual(binaryType);
             break;
         case tknGreaterThan:
-            EmitByte(binaryType == dtFloat ? OP_IS_GREATER_F : OP_IS_GREATER);
+            EmitGreaterThan(binaryType);
             break;
         case tknGreaterEqual:
-            EmitByte(binaryType == dtFloat ? OP_IS_GREATER_OR_EQUAL_F : OP_IS_GREATER_OR_EQUAL);
+            EmitGreaterThanOrEqual(binaryType);
             break;
 
             // Bitwise
@@ -1168,14 +1172,12 @@ void Compiler::Binary() {
         case tknBitwiseXorEquals:
             EmitByte(OP_BIT_XOR);
             break;
-        case tknShiftLeft: {
-            EmitByte(OP_BIT_SHIFT_LEFT);
+        case tknShiftLeft:
+            EmitByte(OP_BIT_SHIFT_L);
             break;
-        }
-        case tknShiftRight: {
-            EmitByte(OP_BIT_SHIFT_RIGHT);
+        case tknShiftRight:
+            EmitByte(OP_BIT_SHIFT_R);
             break;
-        }
 
         default:
             break;
@@ -1185,6 +1187,106 @@ void Compiler::Binary() {
 
     // If the resulting type does not match the required type, cast it.
     EmitCast(TypeCheck(binaryType));
+}
+
+void Compiler::EmitAdd(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_ADD_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_ADD_U);
+    } else {
+        EmitByte(OP_ADD_S);
+    }
+}
+
+void Compiler::EmitSubtract(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_SUB_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_SUB_U);
+    } else {
+        EmitByte(OP_SUB_S);
+    }
+}
+
+void Compiler::EmitMultiply(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_MULT_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_MULT_U);
+    } else {
+        EmitByte(OP_MULT_S);
+    }
+}
+
+void Compiler::EmitDivide(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_DIV_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_DIV_U);
+    } else {
+        EmitByte(OP_DIV_S);
+    }
+}
+
+void Compiler::EmitEqual(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_EQUAL_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_EQUAL_U);
+    } else {
+        EmitByte(OP_EQUAL_S);
+    }
+}
+
+void Compiler::EmitNotEqual(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_NOT_EQUAL_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_NOT_EQUAL_U);
+    } else {
+        EmitByte(OP_NOT_EQUAL_S);
+    }
+}
+
+void Compiler::EmitLessThan(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_LESS_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_LESS_U);
+    } else {
+        EmitByte(OP_LESS_S);
+    }
+}
+
+void Compiler::EmitLessThanOrEqual(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_LESS_OR_EQUAL_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_LESS_OR_EQUAL_U);
+    } else {
+        EmitByte(OP_LESS_OR_EQUAL_S);
+    }
+}
+
+void Compiler::EmitGreaterThan(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_GREATER_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_GREATER_U);
+    } else {
+        EmitByte(OP_GREATER_S);
+    }
+}
+
+void Compiler::EmitGreaterThanOrEqual(DataType type) {
+    if (type == dtFloat) {
+        EmitByte(OP_GREATER_OR_EQUAL_F);
+    } else if (type == dtUint32) {
+        EmitByte(OP_GREATER_OR_EQUAL_U);
+    } else {
+        EmitByte(OP_GREATER_OR_EQUAL_S);
+    }
 }
 
 void Compiler::Grouping() {
@@ -1273,6 +1375,7 @@ void Compiler::Ternary() {
     // Clear the current type as the boolean statement isn't relevant anymore
     TypeSetCurrent(dtNone, true);
     DataType expectingType = CurrentType();
+    DataType valueType = dtNone;
 
     // If the condition is false we jump over to true expression
     int falseJump = EmitJump(OP_JUMP_IF_FALSE);
@@ -1280,13 +1383,7 @@ void Compiler::Ternary() {
     // ==== True expression ====
     EmitByte(OP_POP); // Get the condition off the stack
 
-    DataType trueType = Expression();
-    TypeCompatibility trueCompat = TypeCheck(trueType);
-    if (trueCompat != tcMatch) {
-        AddWarning("Expression will be implicitly cast to assignee type: "
-                   + DataTypeToString(expectingType), LookBack());
-    }
-    EmitCast(trueCompat);
+    valueType = Expression();
 
     int exitJump = EmitJump(OP_JUMP);
 
@@ -1297,16 +1394,17 @@ void Compiler::Ternary() {
     PatchJump(falseJump); // << False condition lands here
     EmitByte(OP_POP); // Get the condition off the stack
 
-    DataType falseType = Expression();
-    TypeCompatibility falseCompat = TypeCheck(falseType);
-    if (trueCompat != tcMatch) {
-        AddWarning("Expression will be implicitly cast to assignee type: "
-                   + DataTypeToString(expectingType), LookBack());
-    }
-    EmitCast(falseCompat);
+    valueType = Expression();
 
     // End
     PatchJump(exitJump);
+
+    TypeCompatibility compat = TypeCheck(valueType);
+    if (compat != tcMatch && compat > tcIncompatible) {
+        AddWarning("Expression will be implicitly cast to assignee type: "
+                   + DataTypeToString(expectingType), LookBack());
+    }
+    EmitCast(compat);
 
     // Set the type to the expected type so no further casting happens.
     TypeSetCurrent(expectingType);
@@ -1680,10 +1778,10 @@ void Compiler::SwitchAsIfElse() {
 
             // Check the type of the case label
             TypeCompatibility caseCompat = TypeInfo::CheckCompatibility(switchType, value.Type);
-            if (caseCompat == tcCastFloatToInt) {
+            if (caseCompat == tcCastFloatToSigned) {
                 value.ConstValue.Int = (int) value.ConstValue.Float;
                 value.Type = dtInt32;
-            } else if (caseCompat == tcCastIntToFloat) {
+            } else if (caseCompat == tcCastSignedToFloat) {
                 value.ConstValue.Float = (float) value.ConstValue.Int;
                 value.Type = dtFloat;
             }
@@ -2892,6 +2990,10 @@ void Compiler::AssignArrayIndex(DataType arrayType, TokenType assignToken) {
         Binary();
     }
 
+    if (m_CurrentArray != nullptr) {
+        m_CurrentArray->Writes++;
+    }
+
     EmitSetAtOffset(arrayType, exprType);
 }
 
@@ -2928,6 +3030,7 @@ void Compiler::NamedVariable(const Token &token, bool canAssign) {
     // Check if the variable is an array
     if (variable->IsArray()) {
         EmitAbsolutePointer(variable);
+        m_CurrentArray = variable;
         if (!Check(tknLeftSquareBracket)) {
             // Raw Pointer
         }
@@ -3082,6 +3185,10 @@ void Compiler::EmitGetFromOffset(DataType dataType, DataType outputType) {
             break;
     }
 
+    if (m_CurrentArray != nullptr) {
+        m_CurrentArray->Reads++;
+    }
+
     EmitCast(cast);
 }
 
@@ -3126,10 +3233,10 @@ void Compiler::EmitSetAtOffset(DataType dataType, DataType inputType) {
 void Compiler::EmitCast(TypeCompatibility castMode, bool previous) {
 
     switch (castMode) {
-        case tcCastIntToFloat:
+        case tcCastSignedToFloat:
             EmitByte(previous ? OP_CAST_PREV_INT_TO_FLOAT : OP_CAST_INT_TO_FLOAT);
             break;
-        case tcCastFloatToInt:
+        case tcCastFloatToSigned:
             EmitByte(previous ? OP_CAST_PREV_FLOAT_TO_INT : OP_CAST_FLOAT_TO_INT);
             break;
         default:
@@ -3233,6 +3340,10 @@ u32 Compiler::GetCodeSize() {
 void Compiler::SanityCheck() {
     // TODO: Check for unused variables
     for(auto &var : m_Globals) {
+        if (var.Name.starts_with("__") && var.Name.ends_with("__")) {
+            continue;
+        }
+
         if (var.Writes < 1) {
             AddWarning("Variable '" + var.Name + "' is never assigned.", var.Token);
         }

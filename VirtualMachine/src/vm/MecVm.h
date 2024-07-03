@@ -81,7 +81,6 @@ private:
     void Duplicate(u32 count = 1);
 
     Value *FindVariable(const VmPointer &pointer);
-    void AssignVariable(opCode_t assignOp, const VmPointer &pointer);
     void IncrementValue(const VmPointer &pointer, bool push);
     void DecrementValue(const VmPointer &pointer, bool push);
     bool Call(funcPtr_t functionId, int argCount);

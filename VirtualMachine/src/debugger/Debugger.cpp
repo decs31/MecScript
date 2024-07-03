@@ -152,19 +152,19 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             MSG("Negate(-)");
             break;
         }
-        case OP_ADD: {
+        case OP_ADD_S: {
             MSG("Add(+)");
             break;
         }
-        case OP_SUBTRACT: {
+        case OP_SUB_S: {
             MSG("Subtract(-)");
             break;
         }
-        case OP_MULTIPLY: {
+        case OP_MULT_S: {
             MSG("Multiply(*)");
             break;
         }
-        case OP_DIVIDE: {
+        case OP_DIV_S: {
             MSG("Divide(/)");
             break;
         }
@@ -178,27 +178,27 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             MSG("Not(!)");
             break;
         }
-        case OP_IS_EQUAL: {
+        case OP_EQUAL_S: {
             MSG("Equal(==)");
             break;
         }
-        case OP_IS_NOT_EQUAL: {
+        case OP_NOT_EQUAL_S: {
             MSG("NotEqual(!=)");
             break;
         }
-        case OP_IS_LESS: {
+        case OP_LESS_S: {
             MSG("Less(<)");
             break;
         }
-        case OP_IS_LESS_OR_EQUAL: {
+        case OP_LESS_OR_EQUAL_S: {
             MSG("LessOrEqual(<=)");
             break;
         }
-        case OP_IS_GREATER: {
+        case OP_GREATER_S: {
             MSG("Greater(>)");
             break;
         }
-        case OP_IS_GREATER_OR_EQUAL: {
+        case OP_GREATER_OR_EQUAL_S: {
             MSG("GreaterOrEqual(>=)");
             break;
         }
@@ -220,38 +220,18 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             MSG(("BitwiseXOR(^)"));
             break;
         }
-        case OP_BIT_SHIFT_LEFT: {
+        case OP_BIT_SHIFT_L: {
             MSG(("BitShiftLeft(<<)"));
             break;
         }
-        case OP_BIT_SHIFT_RIGHT: {
+        case OP_BIT_SHIFT_R: {
             MSG(("BitShiftLeft(>>)"));
             break;
         }
 
             // Assignment
         case OP_ASSIGN: {
-            MSG("Assign(=)");
-            break;
-        }
-        case OP_PLUS_EQUALS:
-        case OP_PLUS_EQUALS_F: {
-            MSG("Assign(+=)");
-            break;
-        }
-        case OP_MINUS_EQUALS:
-        case OP_MINUS_EQUALS_F: {
-            MSG("Assign(-=)");
-            break;
-        }
-        case OP_TIMES_EQUALS:
-        case OP_TIMES_EQUALS_F: {
-            MSG("Assign(*=)");
-            break;
-        }
-        case OP_DIVIDE_EQUALS:
-        case OP_DIVIDE_EQUALS_F: {
-            MSG("Assign(/=)");
+            MSG("Assign = ");
             break;
         }
 
