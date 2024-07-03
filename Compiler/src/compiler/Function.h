@@ -45,15 +45,16 @@ public:
 class ScriptFunction : public FunctionInfo {
 public:
     int Id = -1;
-    int EnclosingId = -1;
-    FunctionInfo *Enclosing = nullptr;
+    //int EnclosingId = -1;
+    ScriptFunction *Enclosing = nullptr;
     std::vector<opCode_t> Code;
-    std::vector<VariableInfo> Locals;
+    std::vector<VariableInfo *> Locals;
     u32 LocalsMaxHeight = 0;
     int ConditionalDepth = 0;
     bool ReturnSupplied = false;
 
-    ScriptFunction(FunctionType type, int id) : FunctionInfo(type, dtNone), Id(id) {}
+    ScriptFunction(FunctionType type, int id);
+    ~ScriptFunction();
 
     u32 TotalLocalsHeight();
 };

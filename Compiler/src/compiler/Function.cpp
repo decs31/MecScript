@@ -4,6 +4,19 @@
 
 #include "Function.h"
 
+ScriptFunction::ScriptFunction(FunctionType type, int id)
+        : FunctionInfo(type, dtNone), Id(id)
+        {
+
+}
+
+ScriptFunction::~ScriptFunction() {
+    for (auto var : Locals) {
+        delete(var);
+    }
+    Locals.clear();
+}
+
 u32 ScriptFunction::TotalLocalsHeight() {
     return 0;
     /*

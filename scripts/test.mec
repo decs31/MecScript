@@ -47,7 +47,7 @@ printi(a);
 */
 
 // Array Test
-print("=== Array Test ===");
+println("=== Array Test ===");
 byte myArray[10] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 myArray[0] += 100;
 myArray[9] = 5;
@@ -56,7 +56,7 @@ myArray[9] *= myArray[2];
 void printArray() {
     //ushort myArray[] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
     //myArray[2] = 500;
-    print("print array");
+    println("print array");
     for (int i = 0; i < 10; ++i) {
         printi(myArray[i]);
     }

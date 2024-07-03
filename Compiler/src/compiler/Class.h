@@ -15,10 +15,9 @@ struct ClassInfo {
     Token Token;
     string Name;
     int Id = -1;
-    int EnclosingId = -1;
     ClassInfo *Enclosing = nullptr;
     int ParentFunctionId = -1;
-    std::vector<VariableInfo> Fields;
+    std::vector<VariableInfo *> Fields;
     std::vector<string> Methods;
     int InitFunctionId = -1;
     int ConstructorFunctionId = -1;

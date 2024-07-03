@@ -50,41 +50,41 @@ ScriptFunction *Compiler::CreateFunction(const string &name, FunctionType type, 
 
     // In case the vector gets reallocated, we need to set the pointers by finding them again.
     int id = (int) m_Functions.size();
-    int enclosing = m_CurrentChunk == nullptr ? -1 : m_CurrentChunk->Id;
-    m_Functions.emplace_back(type, id);
-    m_CurrentChunk = &m_Functions.back();
-    m_CurrentChunk->EnclosingId = enclosing;
-    m_CurrentChunk->Enclosing = FindFunctionById(enclosing);
-    m_CurrentChunk->Name = name;
-    m_CurrentChunk->ReturnType = returnType;
-    m_CurrentChunk->ParentClass = CurrentClass() ? CurrentClass()->Name : "";
-    m_CurrentChunk->Token = LookBack();
+    auto newFunc = new ScriptFunction(type, id);
+    newFunc->Enclosing = m_CurrentFunction;
+    newFunc->Name = name;
+    newFunc->ReturnType = returnType;
+    newFunc->ParentClass = CurrentClass() ? CurrentClass()->Name : "";
+    newFunc->Token = LookBack();
 
-    return m_CurrentChunk;
+    m_Functions.push_back(newFunc);
+    m_CurrentFunction = newFunc;
+
+    return m_CurrentFunction;
 }
 
 int Compiler::EndFunction() {
 
-    int completedId = m_CurrentChunk->Id;
+    int completedId = m_CurrentFunction->Id;
 
-    if (m_CurrentChunk->TotalLocalsHeight() > m_LocalsMax)
-        m_LocalsMax = m_CurrentChunk->TotalLocalsHeight();
+    if (m_CurrentFunction->TotalLocalsHeight() > m_LocalsMax)
+        m_LocalsMax = m_CurrentFunction->TotalLocalsHeight();
 
-    m_CurrentChunk = FindFunctionById(m_CurrentChunk->EnclosingId);
+    m_CurrentFunction = m_CurrentFunction->Enclosing;
 
     return completedId;
 }
 
 ScriptFunction *Compiler::CurrentFunction() {
 
-    return m_CurrentChunk;
+    return m_CurrentFunction;
 }
 
 ScriptFunction *Compiler::FindFunctionById(int chunkId) {
 
-    for (auto &chunk: m_Functions) {
-        if (chunk.Id == chunkId) {
-            return &chunk;
+    for (auto chunk: m_Functions) {
+        if (chunk->Id == chunkId) {
+            return chunk;
         }
     }
 
@@ -100,8 +100,8 @@ FunctionInfo *Compiler::FindFunction(const string &name) {
 
     // Look up script functions
     for (auto &chunk: m_Functions) {
-        if (chunk.Name == name) {
-            return &chunk;
+        if (chunk->Name == name) {
+            return chunk;
         }
     }
 
@@ -1742,14 +1742,11 @@ void Compiler::SwitchAsIfElse() {
     // Create a local variable from it, so it's easy to access later.
     VmPointer inputPtr = VmPointer(CurrentFunction()->Locals.size(), switchType, scopeLocal);
     VariableInfo *swVar;
-    {
-        VariableInfo var{};
-        var.Name = "<switch>";
-        var.Depth = m_ScopeDepth;
-        var.Pointer = inputPtr;
-        CurrentFunction()->Locals.push_back(var);
-        swVar = &CurrentFunction()->Locals.back();
-    }
+    swVar = new VariableInfo();
+    swVar->Name = "<switch>";
+    swVar->Depth = m_ScopeDepth;
+    swVar->Pointer = inputPtr;
+    CurrentFunction()->Locals.push_back(swVar);
     EmitSetVariable(OP_ASSIGN, swVar, switchType);
 
     ConsumeToken(tknRightParen, -1, "Expected ')' after 'switch' expression.");
@@ -1846,10 +1843,10 @@ int Compiler::DiscardLocals(int depth) {
 
     int local = (int) (CurrentFunction()->Locals.size() - 1);
     int pops = 0;
-    while (local >= 0 && CurrentFunction()->Locals[local].Depth >= depth) {
+    while (local >= 0 && CurrentFunction()->Locals[local]->Depth >= depth) {
 
         // Call destructors on classes going out of scope
-        VariableInfo *var = &CurrentFunction()->Locals[local];
+        VariableInfo *var = CurrentFunction()->Locals[local];
         // TODO: Check this is required/correct
         // If not we need to check variable reads here for sanity checking
         Destroy(var);
@@ -1922,9 +1919,9 @@ void Compiler::ScopeEnd(bool pop) {
 
     int popCount = 0;
     while ((!CurrentFunction()->Locals.empty()) &&
-           (CurrentFunction()->Locals[CurrentFunction()->Locals.size() - 1].Depth > m_ScopeDepth)) {
+           (CurrentFunction()->Locals[CurrentFunction()->Locals.size() - 1]->Depth > m_ScopeDepth)) {
 
-        VariableInfo *var = &CurrentFunction()->Locals.back();
+        VariableInfo *var = CurrentFunction()->Locals.back();
         Destroy(var);
 
         CurrentFunction()->Locals.pop_back();
@@ -1972,11 +1969,12 @@ void Compiler::ClassDeclaration() {
     initFunc->IsParameterless = true;
     klass->InitFunctionId = initFunc->Id;
     initFunc->Args.emplace_back(dtPointer);
-    VariableInfo thisVar{};
-    thisVar.Name = "this";
-    thisVar.ParentClass = klass->Name;
-    thisVar.Depth = m_ScopeDepth;
-    thisVar.Pointer = VmPointer(CurrentFunction()->Locals.size(), dtPointer, scopeLocal);
+
+    auto thisVar = new VariableInfo();
+    thisVar->Name = "this";
+    thisVar->ParentClass = klass->Name;
+    thisVar->Depth = m_ScopeDepth;
+    thisVar->Pointer = VmPointer(CurrentFunction()->Locals.size(), dtPointer, scopeLocal);
     CurrentFunction()->Locals.push_back(thisVar);
 
     while (!Check(tknRightCurly) && !IsAtEnd()) {
@@ -2011,9 +2009,9 @@ void Compiler::ClassDeclaration() {
 
 ClassInfo *Compiler::ResolveClass(const string &name) {
 
-    for (auto &klass: m_Classes) {
-        if (klass.Name == name)
-            return &klass;
+    for (auto klass: m_Classes) {
+        if (klass->Name == name)
+            return klass;
     }
 
     return nullptr;
@@ -2021,18 +2019,18 @@ ClassInfo *Compiler::ResolveClass(const string &name) {
 
 ClassInfo *Compiler::CreateClass(const string &name) {
 
-    ClassInfo klass{};
-    klass.Token = LookBack();
-    klass.Name = name;
-    klass.Id = (int) m_Classes.size();
-    klass.EnclosingId = m_CurrentClass != nullptr ? m_CurrentClass->Id : -1;
-    klass.ParentFunctionId = CurrentFunction()->Id;
+    auto *klass = new ClassInfo();
+    klass->Token = LookBack();
+    klass->Name = name;
+    klass->Id = (int) m_Classes.size();
+    klass->Enclosing = m_CurrentClass;
+    klass->ParentFunctionId = CurrentFunction()->Id;
 
     m_Classes.push_back(klass);
-    m_CurrentClass = &m_Classes.back();
+    m_CurrentClass = klass;
 
     if (CurrentScope() >= scopeLocal) {
-        AddError("Class types cannot be declared inside a local scope.", klass.Token);
+        AddError("Class types cannot be declared inside a local scope.", klass->Token);
     }
 
     return m_CurrentClass;
@@ -2040,22 +2038,14 @@ ClassInfo *Compiler::CreateClass(const string &name) {
 
 void Compiler::EndClass() {
 
-    // Find the enclosing class in case the vector has been reallocated.
-    ClassInfo *enclosing = nullptr;
-    for (auto &klass: m_Classes) {
-        if (klass.Id == m_CurrentClass->EnclosingId) {
-            enclosing = &klass;
-            break;
-        }
-    }
-
     // Check the class has some members
     if (m_CurrentClass->Fields.empty()) {
         AddError("Class body must contain at least one field.", m_CurrentClass->Token);
         m_Classes.pop_back(); // No point keeping the empty class
     }
 
-    m_CurrentClass = enclosing;
+    // Roll back the current class to it's enclosing parent
+    m_CurrentClass = m_CurrentClass->Enclosing;
 }
 
 ClassInfo *Compiler::CurrentClass() {
@@ -2726,7 +2716,7 @@ VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const string &classN
         return nullptr;
     }
 
-    std::vector<VariableInfo> *varVector;
+    std::vector<VariableInfo *> *varVector;
 
     if (scope == scopeGlobal) {
         varVector = &m_Globals;
@@ -2738,14 +2728,14 @@ VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const string &classN
 
     int classAddress = (int) varVector->size();
 
-    for (auto &m: classInfo->Fields) {
+    for (auto m: classInfo->Fields) {
         int address = (int) varVector->size();
-        if (m.Type() == dtClass) {
-            AddClassMembers(scope, m.ParentClass, m.Name);
+        if (m->Type() == dtClass) {
+            AddClassMembers(scope, m->ParentClass, m->Name);
         } else {
             varVector->push_back(m);
         }
-        VariableInfo *member = &varVector->back();
+        VariableInfo *member = varVector->back();
         member->ParentInstance = instanceName;
         member->ParentAddress = classAddress;
         member->Pointer.Address = address;
@@ -2753,36 +2743,36 @@ VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const string &classN
         member->Depth = m_ScopeDepth; // Class members get initialised by the class init function.
     }
 
-    return &varVector->at(classAddress);
+    return varVector->at(classAddress);
 }
 
 VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, DataType dataType, u32 flags) {
 
-    VariableInfo var{};
-    var.Pointer = VmPointer(0xFFFF, dataType, scope);
-    var.Name = name;
-    var.Flags = flags;
+    auto *var = new VariableInfo();
+    var->Pointer = VmPointer(0xFFFF, dataType, scope);
+    var->Name = name;
+    var->Flags = flags;
     if (dataType == dtClass) {
-        var.MemberIndex = 0;
+        var->MemberIndex = 0;
     }
     if (InClassInitialiser()) {
-        var.ParentClass = CurrentClass()->Name;
-        var.Size = 1;
-        var.MemberIndex = (int) CurrentClass()->Fields.size();
+        var->ParentClass = CurrentClass()->Name;
+        var->Size = 1;
+        var->MemberIndex = (int) CurrentClass()->Fields.size();
     } else if (CurrentClassInstance()) {
-        var.ParentClass = CurrentClassInstance()->Name;
-        var.Size = CurrentClassInstance()->Size(); // ?
+        var->ParentClass = CurrentClassInstance()->Name;
+        var->Size = CurrentClassInstance()->Size(); // ?
     } else {
-        var.Size = 1;
+        var->Size = 1;
     }
-    if (var.IsFunction() || dataType == dtFunction || dataType == dtNativeFunc) {
-        var.Depth = 0;
+    if (var->IsFunction() || dataType == dtFunction || dataType == dtNativeFunc) {
+        var->Depth = 0;
     } else {
-        var.Depth = NOT_SET; // Set after the variable is initialised.
+        var->Depth = NOT_SET; // Set after the variable is initialised.
     }
 
     VariableInfo *newVar = nullptr;
-    std::vector<VariableInfo> *varVector;
+    std::vector<VariableInfo *> *varVector;
 
     if (InClassInitialiser()) {
         varVector = &CurrentClass()->Fields;
@@ -2796,11 +2786,12 @@ VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, D
 
     // Add class members to the memory stack
     if (dataType == dtClass && CurrentClassInstance()) {
+        delete(var); // TODO: Improve this
         newVar = AddClassMembers(scope, CurrentClassInstance()->Name, name);
     } else {
-        var.Pointer.Address = varVector->size();
+        var->Pointer.Address = varVector->size();
         varVector->push_back(var);
-        newVar = &varVector->back();
+        newVar = var;
     }
 
     return newVar;
@@ -2809,7 +2800,7 @@ VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, D
 VariableInfo *Compiler::ResolveGlobal(const string &name, const string &parent) {
 
     for (int i = (int) (m_Globals.size() - 1); i >= 0; --i) {
-        VariableInfo *var = &m_Globals[i];
+        VariableInfo *var = m_Globals[i];
         if (var->Match(name, parent) || var->IsHeadMemberOf(name)) {
             if (var->Depth == NOT_SET) {
                 AddError("Can't read global variable in its own initializer.", LookBack());
@@ -2824,7 +2815,7 @@ VariableInfo *Compiler::ResolveGlobal(const string &name, const string &parent) 
 VariableInfo *Compiler::ResolveLocal(const string &name, const string &parent) {
 
     for (int i = (int) (CurrentFunction()->Locals.size() - 1); i >= 0; --i) {
-        VariableInfo *var = &CurrentFunction()->Locals[i];
+        VariableInfo *var = CurrentFunction()->Locals[i];
         if (var->Match(name, parent) || var->IsHeadMemberOf(name)) {
             if (var->Depth == NOT_SET) {
                 AddError("Can't read local variable in its own initializer.", LookBack());
@@ -2843,7 +2834,7 @@ VariableInfo *Compiler::ResolveMember(ClassInfo *parentClass, const string &name
     }
 
     for (int i = (int) (parentClass->Fields.size() - 1); i >= 0; --i) {
-        VariableInfo *var = &parentClass->Fields[i];
+        VariableInfo *var = parentClass->Fields[i];
         if (var->Name == name) {
             if (var->Depth == NOT_SET) {
                 AddError("Can't read local variable in its own initializer.", LookBack());
@@ -2923,15 +2914,15 @@ void Compiler::DefineVariable(VariableInfo *variable, DataType inputType) {
 void Compiler::MarkInitialised(VarScopeType scope) {
 
     if (InClassInitialiser()) {
-        VariableInfo *memberVar = &CurrentClass()->Fields.back();
+        VariableInfo *memberVar = CurrentClass()->Fields.back();
         if (memberVar->Depth == NOT_SET)
             memberVar->Depth = m_ScopeDepth;
     } else if (scope == scopeGlobal) {
-        VariableInfo *globalVar = &m_Globals.back();
+        VariableInfo *globalVar = m_Globals.back();
         if (globalVar->Depth == NOT_SET)
             globalVar->Depth = 0;
     } else {
-        VariableInfo *localVar = &CurrentFunction()->Locals.back();
+        VariableInfo *localVar = CurrentFunction()->Locals.back();
         localVar->Depth = m_ScopeDepth;
     }
 }
@@ -3330,8 +3321,11 @@ void Compiler::EmitReturn() {
 u32 Compiler::GetCodeSize() {
 
     u32 size = 0;
-    for (auto &chunk: m_Functions) {
-        size += chunk.Code.size();
+    for (auto &func: m_Functions) {
+        if (func == nullptr)
+            continue;
+
+        size += func->Code.size();
     }
 
     return size;
@@ -3340,15 +3334,15 @@ u32 Compiler::GetCodeSize() {
 void Compiler::SanityCheck() {
     // TODO: Check for unused variables
     for(auto &var : m_Globals) {
-        if (var.Name.starts_with("__") && var.Name.ends_with("__")) {
+        if (var->Name.starts_with("__") && var->Name.ends_with("__")) {
             continue;
         }
 
-        if (var.Writes < 1) {
-            AddWarning("Variable '" + var.Name + "' is never assigned.", var.Token);
+        if (var->Writes < 1) {
+            AddWarning("Variable '" + var->Name + "' is never assigned.", var->Token);
         }
-        if (var.Reads < 1) {
-            AddWarning("Variable '" + var.Name + "' is never used.", var.Token);
+        if (var->Reads < 1) {
+            AddWarning("Variable '" + var->Name + "' is never used.", var->Token);
         }
     }
 }
@@ -3436,26 +3430,28 @@ while(FILE_POS % 4 > 0) { \
     PADD_BYTES
     u32 codeStart = FILE_POS;
     std::map<funcPtr_t, string> functionsMap;
-    for (auto &func: m_Functions) {
+    for (auto func: m_Functions) {
+        if (func == nullptr)
+            continue;
+
         u32 funcPos = FILE_POS - codeStart;
         // Patch function pointers
-        if (!PatchFunctionOffset(func.Name, func.Id, funcPos)) {
-            AddWarning("Function '" + func.Name + "' is never used", func.Token);
-            //return SetResult(errFunctionLinkingError, "Failed to link function '" + func.Name + "' into final code.");
+        if (!PatchFunctionOffset(func->Name, func->Id, funcPos)) {
+            AddWarning("Function '" + func->Name + "' is never used", func->Token);
             continue;
         }
 
         // Output the function to the function map for debugging
-        functionsMap.emplace(funcPos, func.Name.empty() ? "<Script>" : func.Name);
+        functionsMap.emplace(funcPos, func->Name.empty() ? "<Script>" : func->Name);
 
         // Function header (skipped for top level)
-        if (!func.Name.empty()) {
-            WRITE_BYTE((uint8_t) func.ReturnType);
-            WRITE_BYTE((uint8_t) func.TotalArgCount());
+        if (!func->Name.empty()) {
+            WRITE_BYTE((uint8_t) func->ReturnType);
+            WRITE_BYTE((uint8_t) func->TotalArgCount());
         }
 
         // Write function code
-        for (auto &code: func.Code) {
+        for (auto &code: func->Code) {
             WRITE_BYTE((uint8_t) code);
         }
     }
@@ -3524,8 +3520,26 @@ while(FILE_POS % 4 > 0) { \
 }
 
 void Compiler::Cleanup() {
-    // Clean up
+    // Functions
+    for (auto func : m_Functions) {
+        delete(func);
+    }
     m_Functions.clear();
+
+    // Classes
+    for (auto klass : m_Classes) {
+        delete(klass);
+    }
+    m_Classes.clear();
+
+    // Variables
+    for (auto global : m_Globals) {
+        delete(global);
+    }
+    for (auto shared : m_SharedGlobals) {
+        delete(shared);
+    }
+
     m_ConstValues.clear();
     m_ConstStrings.clear();
 }

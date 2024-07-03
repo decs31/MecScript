@@ -7,6 +7,7 @@
 
 #include "CompilerData.h"
 #include <set>
+#include <bits/shared_ptr.h>
 #include "MecScriptBase.h"
 #include "ErrorHandler.h"
 #include "Lexer.h"
@@ -90,7 +91,7 @@ private:
     ClassInfo *m_CurrentClass = nullptr;
     ClassInfo *CreateClass(const string &name);
     void EndClass();
-    std::vector<ClassInfo> m_Classes;
+    std::vector<ClassInfo *> m_Classes;
     ClassInfo *CurrentClass();
     ClassInfo *m_CurrentClassInstance = nullptr;
     void ClassInstanceBegin(ClassInfo *classInstance);
@@ -99,8 +100,8 @@ private:
     bool InClassInitialiser();
 
     /* Functions */
-    std::vector<ScriptFunction> m_Functions;
-    ScriptFunction *m_CurrentChunk = nullptr;
+    std::vector<ScriptFunction *> m_Functions;
+    ScriptFunction *m_CurrentFunction = nullptr;
     ScriptFunction *CreateFunction(const string &name, FunctionType type, DataType returnType);
     ScriptFunction *CurrentFunction();
     ScriptFunction *FindFunctionById(int chunkId);
@@ -116,8 +117,8 @@ private:
     std::vector<char> m_StringData;
 
     /* Variables */
-    std::vector<VariableInfo> m_SharedGlobals;
-    std::vector<VariableInfo> m_Globals;
+    std::vector<VariableInfo *> m_SharedGlobals;
+    std::vector<VariableInfo *> m_Globals;
     int m_ScopeDepth = 0;
     u32 m_LocalsMax = 0;
     VariableInfo *m_CurrentArray = nullptr;
