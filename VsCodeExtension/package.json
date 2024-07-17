@@ -1,0 +1,25 @@
+{
+  "name": "mecscript",
+  "displayName": "MecScript",
+  "description": "MecScript Language Support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "mecscript",
+      "aliases": ["MecScript", "mecscript"],
+      "extensions": [".mec"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "mecscript",
+      "scopeName": "source.mec",
+      "path": "./syntaxes/mecscript.tmLanguage.json"
+    }]
+  }
+}
