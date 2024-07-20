@@ -51,7 +51,7 @@ int t = a > b ? 5 : add(5, 5);
 
 
 // Bitwise
-byte bits = b & 0x10101010;
+byte bits = b & 0b10101010;
 
 
 // Arrays
