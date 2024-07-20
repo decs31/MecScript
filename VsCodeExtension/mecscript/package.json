@@ -1,25 +1,47 @@
 {
   "name": "mecscript",
   "displayName": "MecScript",
-  "description": "MecScript Language Support",
-  "version": "0.0.1",
+  "description": "Support for the MecScript programming language",
+  "version": "0.1.0",
+  "publisher": "Walsh Technologies Pty Ltd",
+    "author": {
+        "name": "Declan Walsh"
+  },
   "engines": {
     "vscode": "^1.91.0"
   },
   "categories": [
     "Programming Languages"
   ],
+  "icon": "images/mecscript.png",
+  "galleryBanner": {
+        "color": "#93FF00",
+        "theme": "dark"
+  },
   "contributes": {
-    "languages": [{
-      "id": "mecscript",
-      "aliases": ["MecScript", "mecscript"],
-      "extensions": [".mec"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "mecscript",
-      "scopeName": "source.mec",
-      "path": "./syntaxes/mecscript.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "mecscript",
+        "aliases": [
+          "MecScript",
+          "mecscript"
+        ],
+        "extensions": [
+          ".mec"
+        ],
+        "icon": {
+          "light": "./icons/mecscript.png",
+          "dark": "./icons/mecscript.png"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mecscript",
+        "scopeName": "source.mec",
+        "path": "./syntaxes/mecscript.tmLanguage.json"
+      }
+    ]
   }
 }
