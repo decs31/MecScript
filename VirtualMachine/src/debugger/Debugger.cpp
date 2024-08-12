@@ -148,7 +148,7 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
         }
 
             // Math
-        case OP_NEGATE: {
+        case OP_NEGATE_I: {
             MSG("Negate(-)");
             break;
         }

@@ -16,10 +16,14 @@
 #define READ_UINT24()           STRING((m_Pos += 3, (uint32_t)(m_Code[m_Pos-3] | (m_Code[m_Pos-2] << 8) | (m_Code[m_Pos-1] << 16))))
 #define READ_INT32()            STRING((m_Pos += 4, (int32_t)(m_Code[m_Pos-4] | (m_Code[m_Pos-3] << 8) | (m_Code[m_Pos-2] << 16) | (m_Code[m_Pos-1] << 24))))
 
+#define PREV_UINT16()           (uint16_t)(m_Code[m_Pos-2] | (m_Code[m_Pos-1] << 8))
+#define PREV_INT32()            (int32_t)(m_Code[m_Pos-4] | (m_Code[m_Pos-3] << 8) | (m_Code[m_Pos-2] << 16) | (m_Code[m_Pos-1] << 24))
+
+
 #define COL_BIN                 16
 #define COL_ADDR                0
 #define COL_OP                  8
-#define COL_ARGS                24
+#define COL_ARGS                32
 
 static const string divider = "--------------------------------------------------------------";
 
@@ -96,6 +100,18 @@ string Disassembler::ReadInstruction() {
 
     size_t addr = m_Pos++;
     opCode_t op = m_Code[addr];
+
+    if (m_CurrentJumpTableEnd > 0 && m_Pos >= m_CurrentJumpTableStart) {
+        if (m_Pos >= m_CurrentJumpTableStart) {
+            instr = WriteInstruction(addr, "JUMP_TBL_ADDR", READ_BYTE());
+        }
+        if (m_Pos >= m_CurrentJumpTableEnd) {
+            m_CurrentJumpTableStart = 0;
+            m_CurrentJumpTableEnd = 0;
+        }
+
+        return instr;
+    }
 
     switch (op) {
         case OP_NOP: {
@@ -195,8 +211,411 @@ string Disassembler::ReadInstruction() {
         }
 
         // INDEXED VARS
+        case OP_ARRAY: {
+            instr = WriteInstruction(addr, "ARRAY", READ_UINT16());
+            desc = "Grow the stack by the size of the array";
+            break;
+        }
 
+        case OP_GET_INDEXED_S8: {
+            instr = WriteInstruction(addr, "GET_INDEXED_S8");
+            desc = "Get indexed value from array of S8";
+            break;
+        }
+        case OP_GET_INDEXED_U8: {
+            instr = WriteInstruction(addr, "GET_INDEXED_U8");
+            desc = "Get indexed value from array of U8";
+            break;
+        }
+        case OP_GET_INDEXED_S16: {
+            instr = WriteInstruction(addr, "GET_INDEXED_S16");
+            desc = "Get indexed value from array of S16";
+            break;
+        }
+        case OP_GET_INDEXED_U16: {
+            instr = WriteInstruction(addr, "GET_INDEXED_U16");
+            desc = "Get indexed value from array of U16";
+            break;
+        }
+        case OP_GET_INDEXED_S32: {
+            instr = WriteInstruction(addr, "GET_INDEXED_S32");
+            desc = "Get indexed value from array of S32";
+            break;
+        }
+        case OP_GET_INDEXED_U32: {
+            instr = WriteInstruction(addr, "GET_INDEXED_U32");
+            desc = "Get indexed value from array of U32";
+            break;
+        }
+        case OP_GET_INDEXED_FLOAT: {
+            instr = WriteInstruction(addr, "GET_INDEXED_FLOAT");
+            desc = "Get indexed value from array of FLOAT";
+            break;
+        }
+        case OP_SET_INDEXED_S8: {
+            instr = WriteInstruction(addr, "SET_INDEXED_S8");
+            desc = "Set indexed value from array of S8";
+            break;
+        }
+        case OP_SET_INDEXED_U8: {
+            instr = WriteInstruction(addr, "SET_INDEXED_U8");
+            desc = "Set indexed value from array of U8";
+            break;
+        }
+        case OP_SET_INDEXED_S16: {
+            instr = WriteInstruction(addr, "SET_INDEXED_S16");
+            desc = "Set indexed value from array of S16";
+            break;
+        }
+        case OP_SET_INDEXED_U16: {
+            instr = WriteInstruction(addr, "SET_INDEXED_U16");
+            desc = "Set indexed value from array of U16";
+            break;
+        }
+        case OP_SET_INDEXED_S32: {
+            instr = WriteInstruction(addr, "SET_INDEXED_S32");
+            desc = "Set indexed value from array of S32";
+            break;
+        }
+        case OP_SET_INDEXED_U32: {
+            instr = WriteInstruction(addr, "SET_INDEXED_U32");
+            desc = "Set indexed value from array of U32";
+            break;
+        }
+        case OP_SET_INDEXED_FLOAT: {
+            instr = WriteInstruction(addr, "SET_INDEXED_FLOAT");
+            desc = "Set indexed value from array of FLOAT";
+            break;
+        }
 
+        // Casting
+        case OP_CAST_INT_TO_FLOAT: {
+            instr = WriteInstruction(addr, "CAST_INT_TO_FLOAT");
+            desc = "Cast int to float";
+            break;
+        }
+        case OP_CAST_PREV_INT_TO_FLOAT: {
+            instr = WriteInstruction(addr, "CAST_PREV_INT_TO_FLOAT");
+            desc = "Cast int at stack top -1 to float";
+            break;
+        }
+        case OP_CAST_FLOAT_TO_INT: {
+            instr = WriteInstruction(addr, "CAST_FLOAT_TO_INT");
+            desc = "Cast float to int";
+            break;
+        }
+        case OP_CAST_PREV_FLOAT_TO_INT: {
+            instr = WriteInstruction(addr, "CAST_PREV_FLOAT_TO_INT");
+            desc = "Cast float at stack top -1 to int";
+            break;
+        }
+
+        // Unary
+        case OP_NEGATE_I: {
+            instr = WriteInstruction(addr, "NEGATE_I");
+            desc = "Negate the int value at the top of the stack";
+            break;
+        }
+        case OP_NEGATE_F: {
+            instr = WriteInstruction(addr, "NEGATE_F");
+            desc = "Negate the float value at the top of the stack";
+            break;
+        }
+        case OP_BIT_NOT: {
+            instr = WriteInstruction(addr, "BIT_NOT");
+            desc = "Bitwise Not";
+            break;
+        }
+        case OP_PREFIX_DECREASE: {
+            instr = WriteInstruction(addr, "PREFIX_DEC");
+            desc = "Decrement the value, then push onto the stack";
+            break;
+        }
+        case OP_PREFIX_INCREASE: {
+            instr = WriteInstruction(addr, "PREFIX_INC");
+            desc = "Increment the value, then push onto the stack";
+            break;
+        }
+        case OP_MINUS_MINUS: {
+            instr = WriteInstruction(addr, "MINUS_MINUS");
+            desc = "Decrement the value in place";
+            break;
+        }
+        case OP_PLUS_PLUS: {
+            instr = WriteInstruction(addr, "PLUS_PLUS");
+            desc = "Increment the value in place";
+            break;
+        }
+
+        // Binary
+        case OP_ADD_S: {
+            instr = WriteInstruction(addr, "ADD_S");
+            desc = "Add (Signed)";
+            break;
+        }
+        case OP_ADD_U: {
+            instr = WriteInstruction(addr, "ADD_U");
+            desc = "Add (Unsigned)";
+            break;
+        }
+        case OP_ADD_F: {
+            instr = WriteInstruction(addr, "ADD_F");
+            desc = "Add (Float)";
+            break;
+        }
+        case OP_SUB_S: {
+            instr = WriteInstruction(addr, "SUB_S");
+            desc = "Sub (Signed)";
+            break;
+        }
+        case OP_SUB_U: {
+            instr = WriteInstruction(addr, "SUB_U");
+            desc = "Sub (Unsigned)";
+            break;
+        }
+        case OP_SUB_F: {
+            instr = WriteInstruction(addr, "SUB_F");
+            desc = "Sub (Float)";
+            break;
+        }
+        case OP_MULT_S: {
+            instr = WriteInstruction(addr, "MULT_S");
+            desc = "Multiply (Signed)";
+            break;
+        }
+        case OP_MULT_U: {
+            instr = WriteInstruction(addr, "MULT_U");
+            desc = "Multiply (Unsigned)";
+            break;
+        }
+        case OP_MULT_F: {
+            instr = WriteInstruction(addr, "MULT_F");
+            desc = "Sub (Float)";
+            break;
+        }
+        case OP_DIV_S: {
+            instr = WriteInstruction(addr, "DIV_S");
+            desc = "Divide (Signed)";
+            break;
+        }
+        case OP_DIV_U: {
+            instr = WriteInstruction(addr, "DIV_U");
+            desc = "Divide (Unsigned)";
+            break;
+        }
+        case OP_DIV_F: {
+            instr = WriteInstruction(addr, "DIV_F");
+            desc = "Divide (Float)";
+            break;
+        }
+        case OP_MODULUS: {
+            instr = WriteInstruction(addr, "MODULUS");
+            desc = "Modulus";
+            break;
+        }
+        case OP_ASSIGN: {
+            instr = WriteInstruction(addr, "ASSIGN");
+            desc = "Assign value";
+            break;
+        }
+        case OP_BIT_AND: {
+            instr = WriteInstruction(addr, "BIT_AND");
+            desc = "Bitwise And";
+            break;
+        }
+        case OP_BIT_OR: {
+            instr = WriteInstruction(addr, "BIT_OR");
+            desc = "Bitwise Or";
+            break;
+        }
+        case OP_BIT_XOR: {
+            instr = WriteInstruction(addr, "BIT_XOR");
+            desc = "Bitwise XOr";
+            break;
+        }
+        case OP_BIT_SHIFT_L: {
+            instr = WriteInstruction(addr, "BIT_SHIFT_L");
+            desc = "Bitwise Shift Left";
+            break;
+        }
+        case OP_BIT_SHIFT_R: {
+            instr = WriteInstruction(addr, "BIT_SHIFT_R");
+            desc = "Bitwise Shift Right";
+            break;
+        }
+
+        // Logic
+        case OP_NOT: {
+            instr = WriteInstruction(addr, "NOT");
+            desc = "Check the value is false and push the result";
+            break;
+        }
+        case OP_EQUAL_S: {
+            instr = WriteInstruction(addr, "EQUAL_S");
+            desc = "Check values are equal (Signed)";
+            break;
+        }
+        case OP_EQUAL_U: {
+            instr = WriteInstruction(addr, "EQUAL_U");
+            desc = "Check values are equal (Unsigned)";
+            break;
+        }
+        case OP_EQUAL_F: {
+            instr = WriteInstruction(addr, "EQUAL_F");
+            desc = "Check values are equal (Float)";
+            break;
+        }
+        case OP_NOT_EQUAL_S: {
+            instr = WriteInstruction(addr, "NOT_EQUAL_S");
+            desc = "Check values are not equal (Signed)";
+            break;
+        }
+        case OP_NOT_EQUAL_U: {
+            instr = WriteInstruction(addr, "NOT_EQUAL_U");
+            desc = "Check values are not equal (Unsigned)";
+            break;
+        }
+        case OP_NOT_EQUAL_F: {
+            instr = WriteInstruction(addr, "NOT_EQUAL_F");
+            desc = "Check values are not equal (Float)";
+            break;
+        }
+        case OP_LESS_S: {
+            instr = WriteInstruction(addr, "LESS_S");
+            desc = "Check values is lesser (Signed)";
+            break;
+        }
+        case OP_LESS_U: {
+            instr = WriteInstruction(addr, "LESS_U");
+            desc = "Check values is lesser (Unsigned)";
+            break;
+        }
+        case OP_LESS_F: {
+            instr = WriteInstruction(addr, "LESS_F");
+            desc = "Check values is lesser (Float)";
+            break;
+        }
+        case OP_LESS_OR_EQUAL_S: {
+            instr = WriteInstruction(addr, "LESS_EQUAL_S");
+            desc = "Check values is lesser or equal (Signed)";
+            break;
+        }
+        case OP_LESS_OR_EQUAL_U: {
+            instr = WriteInstruction(addr, "LESS_EQUAL_U");
+            desc = "Check values is lesser or equal (Unsigned)";
+            break;
+        }
+        case OP_LESS_OR_EQUAL_F: {
+            instr = WriteInstruction(addr, "LESS_EQUAL_F");
+            desc = "Check values is lesser or equal (Float)";
+            break;
+        }
+        case OP_GREATER_S: {
+            instr = WriteInstruction(addr, "GREATER_S");
+            desc = "Check values is greater (Signed)";
+            break;
+        }
+        case OP_GREATER_U: {
+            instr = WriteInstruction(addr, "GREATER_U");
+            desc = "Check values is greater (Unsigned)";
+            break;
+        }
+        case OP_GREATER_F: {
+            instr = WriteInstruction(addr, "GREATER_F");
+            desc = "Check values is greater (Float)";
+            break;
+        }
+        case OP_GREATER_OR_EQUAL_S: {
+            instr = WriteInstruction(addr, "GREATER_EQUAL_S");
+            desc = "Check values is greater or equal (Signed)";
+            break;
+        }
+        case OP_GREATER_OR_EQUAL_U: {
+            instr = WriteInstruction(addr, "GREATER_EQUAL_U");
+            desc = "Check values is greater or equal (Unsigned)";
+            break;
+        }
+        case OP_GREATER_OR_EQUAL_F: {
+            instr = WriteInstruction(addr, "GREATER_EQUAL_F");
+            desc = "Check values is greater or equal (Float)";
+            break;
+        }
+
+        // Flow Control
+        case OP_JUMP: {
+            instr = WriteInstruction(addr, "JUMP", READ_UINT16());
+            desc = "Unconditionally jump the instruction pointer";
+            break;
+        }
+        case OP_BREAK: {
+            instr = WriteInstruction(addr, "BREAK", READ_UINT16());
+            desc = "Jump the instruction pointer out of the current block";
+            break;
+        }
+        case OP_JUMP_IF_FALSE: {
+            instr = WriteInstruction(addr, "JUMP_FALSE", READ_UINT16());
+            desc = "Jump the instruction pointer if the value is false";
+            break;
+        }
+        case OP_JUMP_IF_TRUE: {
+            instr = WriteInstruction(addr, "JUMP_TRUE", READ_UINT16());
+            desc = "Jump the instruction pointer if the value is true";
+            break;
+        }
+        case OP_JUMP_IF_EQUAL: {
+            instr = WriteInstruction(addr, "JUMP_EQUAL", READ_UINT16());
+            desc = "Jump the instruction pointer if the values are equal";
+            break;
+        }
+        case OP_CONTINUE: {
+            instr = WriteInstruction(addr, "CONTINUE", READ_UINT16());
+            desc = "Jump the instruction pointer back to the start of the loop";
+            break;
+        }
+        case OP_LOOP: {
+            instr = WriteInstruction(addr, "LOOP", READ_UINT16());
+            desc = "Jump the instruction pointer back to the start of the loop";
+            break;
+        }
+        case OP_SWITCH: {
+            string end = READ_UINT16();
+            uint16_t endOffset = PREV_UINT16();
+            string min = READ_INT32();
+            int minVal = PREV_INT32();
+            string max = READ_INT32();
+            int maxVal = PREV_INT32();
+            instr = WriteInstruction(addr, "SWITCH", end, min, max);
+            desc = "[End][Min][Max] Set up a jump table and jump to the desired offset";
+            m_CurrentJumpTableEnd = m_Pos + endOffset - 8;
+            m_CurrentJumpTableStart = m_CurrentJumpTableEnd - (((maxVal - minVal) +2 ) * 2);
+            break;
+        }
+        case OP_CALL: {
+            instr = WriteInstruction(addr, "CALL", READ_BYTE());
+            desc = "[Arg Count] Calls a function";
+            break;
+        }
+        case OP_CALL_NATIVE: {
+            instr = WriteInstruction(addr, "CALL_NATIVE", READ_BYTE());
+            desc = "[Arg Count] Calls a native function";
+            break;
+        }
+        case OP_CALL_NO_ARGS: {
+            instr = WriteInstruction(addr, "CALL_NO_ARG", READ_UINT16());
+            desc = "[Func ID] Calls a function";
+            break;
+        }
+        case OP_RETURN: {
+            instr = WriteInstruction(addr, "RETURN");
+            desc = "Return from called function";
+            break;
+        }
+
+        case OP_END: {
+            instr = WriteInstruction(addr, "END");
+            desc = "<< END OF PROGRAM >>";
+            break;
+        }
 
         default: {
             instr = WriteInstruction(addr, "UNKNOWN!", STRING(op));
@@ -204,10 +623,20 @@ string Disassembler::ReadInstruction() {
         }
     }
 
+    /*
     string bin = std::format("{:2X}", op) + " ";
     for (size_t i = addr + 1; i < m_Pos; ++i) {
         bin += std::format("{:2X}", m_Code[i]) + " ";
     }
+    */
+    string bin;
+    for (size_t i = addr; i < m_Pos; ++i) {
+        opCode_t b = m_Code[i];
+        if (b < 0x10)
+            bin += "0";
+        bin += std::format("{:X}", b) + " ";
+    }
+
     ALIGN_STRING(bin, COL_BIN - 2);
     bin += "| ";
 
@@ -238,6 +667,30 @@ string Disassembler::WriteInstruction(size_t addr, const string &op, const strin
     return str;
 }
 
+string Disassembler::ReadHex(int count) {
+
+    string line;
+    for (int i = 0; i < count; ++i) {
+        opCode_t b = m_Code[m_Pos++];
+        if (b < 0x10)
+            line += "0";
+        line += std::format("{:X}", b) + " ";
+    }
+
+    return line;
+}
+
+string Disassembler::ReadString() {
+    string str;
+    do {
+        str += (char)m_Code[m_Pos++];
+    } while (m_Code[m_Pos] != 0);
+
+    m_Pos++;
+
+    return str;
+}
+
 void Disassembler::Disassemble() {
 
     if (!ReadHeader())
@@ -259,7 +712,7 @@ void Disassembler::Disassemble() {
 
     m_Pos = m_CodeStartPos;
 
-    while(m_Pos < m_Length) {
+    while(m_Pos < m_ConstantsPos) {
         string line = ReadInstruction();
         OutputLine(line);
     }
@@ -269,7 +722,10 @@ void Disassembler::Disassemble() {
     // Constants
     OutputLine("CONSTANTS");
     OutputLine(divider);
-
+    while (m_Pos < m_StringsPos) {
+        string c = ReadHex(4);
+        OutputLine(c);
+    }
 
     OutputLine(divider);
     OutputLine("    ");
@@ -277,6 +733,9 @@ void Disassembler::Disassemble() {
     // Strings
     OutputLine("STRINGS");
     OutputLine(divider);
+    while (m_Pos < m_Length) {
+        OutputLine(ReadString());
+    }
 
 
     OutputLine(divider);

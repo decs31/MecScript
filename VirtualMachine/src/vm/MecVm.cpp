@@ -306,7 +306,7 @@ void MecVm::Run(ProgramInfo *program) {
             }
 
                 // Unary
-            case OP_NEGATE: {
+            case OP_NEGATE_I: {
                 Value value = Pop();
                 Push(INT32_VAL(-(value.Int)));
                 break;
@@ -347,12 +347,20 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(+, INT32_VAL, AS_INT32);
                 break;
             }
+            case OP_ADD_U: {
+                OP_BINARY(+, UINT32_VAL, AS_UINT32);
+                break;
+            }
             case OP_ADD_F: {
                 OP_BINARY(+, FLOAT_VAL, AS_FLOAT);
                 break;
             }
             case OP_SUB_S: {
                 OP_BINARY(-, INT32_VAL, AS_INT32);
+                break;
+            }
+            case OP_SUB_U: {
+                OP_BINARY(-, UINT32_VAL, AS_UINT32);
                 break;
             }
             case OP_SUB_F: {
@@ -420,6 +428,10 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(==, BOOL_VAL, AS_INT32);
                 break;
             }
+            case OP_EQUAL_U: {
+                OP_BINARY(==, BOOL_VAL, AS_UINT32);
+                break;
+            }
             case OP_EQUAL_F: {
                 OP_BINARY(==, BOOL_VAL, AS_FLOAT);
                 break;
@@ -438,6 +450,10 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(<, BOOL_VAL, AS_INT32);
                 break;
             }
+            case OP_LESS_U: {
+                OP_BINARY(<, BOOL_VAL, AS_UINT32);
+                break;
+            }
             case OP_LESS_F: {
                 OP_BINARY(<, BOOL_VAL, AS_FLOAT);
                 break;
@@ -445,6 +461,10 @@ void MecVm::Run(ProgramInfo *program) {
 
             case OP_LESS_OR_EQUAL_S: {
                 OP_BINARY(<=, BOOL_VAL, AS_INT32);
+                break;
+            }
+            case OP_LESS_OR_EQUAL_U: {
+                OP_BINARY(<=, BOOL_VAL, AS_UINT32);
                 break;
             }
             case OP_LESS_OR_EQUAL_F: {
@@ -456,6 +476,10 @@ void MecVm::Run(ProgramInfo *program) {
                 OP_BINARY(>, BOOL_VAL, AS_INT32);
                 break;
             }
+            case OP_GREATER_U: {
+                OP_BINARY(>, BOOL_VAL, AS_UINT32);
+                break;
+            }
             case OP_GREATER_F: {
                 OP_BINARY(>, BOOL_VAL, AS_FLOAT);
                 break;
@@ -463,6 +487,10 @@ void MecVm::Run(ProgramInfo *program) {
 
             case OP_GREATER_OR_EQUAL_S: {
                 OP_BINARY(>=, BOOL_VAL, AS_INT32);
+                break;
+            }
+            case OP_GREATER_OR_EQUAL_U: {
+                OP_BINARY(>=, BOOL_VAL, AS_UINT32);
                 break;
             }
             case OP_GREATER_OR_EQUAL_F: {

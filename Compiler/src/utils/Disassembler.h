@@ -28,11 +28,16 @@ private:
 
     bool m_ShowDescription = false;
 
+    size_t m_CurrentJumpTableStart = 0;
+    size_t m_CurrentJumpTableEnd = 0;
+
     void OutputLine(const string &line);
     bool ReadHeader();
     bool ValidateChecksum();
     string ReadInstruction();
     string WriteInstruction(size_t addr, const string &op, const string &arg1 = "", const string &arg2 = "",const string &arg3 = "", const string &arg4 = "");
+    string ReadHex(int count);
+    string ReadString();
 };
 
 #endif //MECSCRIPT_DISASSEMBLER_H

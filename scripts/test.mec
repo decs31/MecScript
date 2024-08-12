@@ -63,6 +63,7 @@ void printArray() {
 }
 
 printArray();
+println("Array Test Done.");
 //*/
 
 // Float Test
@@ -164,7 +165,8 @@ printi(inc);
 
 
 // Switch Test
-/*
+
+println("=== Switch Test ===");
 int switchTest = 0;
 printi(switchTest);
 
@@ -191,7 +193,7 @@ while(switchTest < 10) {
     ++switchTest;
 }
 printi(666);
-*/
+
 
 /*
 int doStuff(int a, int b) {

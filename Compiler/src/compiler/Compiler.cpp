@@ -1056,7 +1056,7 @@ void Compiler::Unary() {
 
     switch (operatorType) {
         case tknMinus:
-            EmitByte(unaryType.Type == dtFloat ? OP_NEGATE_F : OP_NEGATE);
+            EmitByte(unaryType.Type == dtFloat ? OP_NEGATE_F : OP_NEGATE_I);
             break;
         case tknExclamation:
             EmitByte(OP_NOT);

@@ -40,6 +40,7 @@ enum OpCode : opCode_t {
     OP_ABSOLUTE_POINTER,
 
     // Array Indexes
+    OP_ARRAY,
     OP_GET_INDEXED_S8,
     OP_GET_INDEXED_U8,
     OP_GET_INDEXED_S16,
@@ -63,7 +64,7 @@ enum OpCode : opCode_t {
 
     // Math
     OP_MODULUS, // Always int
-    OP_NEGATE,
+    OP_NEGATE_I,
     OP_NEGATE_F,
     OP_ADD_S,
     OP_ADD_U,
@@ -130,9 +131,6 @@ enum OpCode : opCode_t {
     OP_CALL_NO_ARGS,
     OP_CALL_NATIVE,
     OP_RETURN,
-
-    // Objects
-    OP_ARRAY,
 
 
     // End
