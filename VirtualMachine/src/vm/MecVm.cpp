@@ -724,7 +724,12 @@ bool MecVm::Call(funcPtr_t functionId, int argCount) {
 
     CallFrame *frame = &m_Frames[m_FrameCount++];
     frame->FunctionId = functionId;
-    frame->Ip = (PGM_CODE + functionId + 2);
+    frame->Ip = (PGM_CODE + functionId + 3);
+    // Check we're at a valid function header
+    if (frame->Ip[-3] != OP_FUNCTION_START) {
+        SetStatus(vmCallNotAFunction);
+        return false;
+    }
     frame->ReturnType = (DataType) (frame->Ip[-2]);
     frame->Arity = (u8) (frame->Ip[-1]);
 

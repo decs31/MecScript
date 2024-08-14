@@ -3446,6 +3446,7 @@ while(FILE_POS % 4 > 0) { \
 
         // Function header (skipped for top level)
         if (!func->Name.empty()) {
+            WRITE_BYTE(OP_FUNCTION_START);
             WRITE_BYTE((uint8_t) func->ReturnType);
             WRITE_BYTE((uint8_t) func->TotalArgCount());
         }

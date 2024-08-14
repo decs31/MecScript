@@ -33,6 +33,7 @@ enum VmStatus {
     vmStackOverflow,
     vmUnknownFieldScope,
     vmCallArgCountError,
+    vmCallNotAFunction,
     vmCalledNonCallable,
     vmCallFrameOverflow,
     vmNativeFunctionNotResolved,

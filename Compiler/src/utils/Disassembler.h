@@ -35,6 +35,7 @@ private:
     bool ReadHeader();
     bool ValidateChecksum();
     string ReadInstruction();
+    string WriteFunctionHeader(int id, u8 returnType, u8 argCount);
     string WriteInstruction(size_t addr, const string &op, const string &arg1 = "", const string &arg2 = "",const string &arg3 = "", const string &arg4 = "");
     string ReadHex(int count);
     string ReadString();

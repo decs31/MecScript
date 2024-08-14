@@ -134,7 +134,9 @@ enum OpCode : opCode_t {
 
 
     // End
-    OP_END
+    OP_END,
+
+    OP_FUNCTION_START = 255
 };
 
 struct CodeData {
