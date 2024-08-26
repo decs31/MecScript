@@ -605,6 +605,11 @@ string Disassembler::ReadInstruction() {
                 desc = "[End][Min][Max] Set up a jump table and jump to the desired offset";
                 break;
             }
+            case OP_FRAME: {
+                instr = WriteInstruction(addr, "FRAME");
+                desc = "Stores the current call frame on the stack";
+                break;
+            }
             case OP_CALL: {
                 u8 args = READ_BYTE();
                 instr = WriteInstruction(addr, "CALL", STRING(args));

@@ -126,6 +126,7 @@ enum OpCode : opCode_t {
     OP_SWITCH,
     OP_BREAK,
     OP_CONTINUE,
+    OP_FRAME,
     OP_CALL,
     OP_CALL_METHOD,
     OP_CALL_NO_ARGS,

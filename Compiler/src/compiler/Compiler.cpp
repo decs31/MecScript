@@ -2496,6 +2496,11 @@ void Compiler::Call() {
         return;
     }
 
+    // TODO: Store the current call frame on the stack
+    //if (func->Type != ftNative) {
+    //    EmitByte(OP_FRAME);
+    //}
+
     VariableInfo *parentVar = nullptr;
     if (func->Type == ftClassMethod) {
         parentVar = ResolveVariable(LookBack(4).Value);

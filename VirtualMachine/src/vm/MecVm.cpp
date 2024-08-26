@@ -570,7 +570,17 @@ void MecVm::Run(ProgramInfo *program) {
                 break;
             }
 
+            case OP_FRAME: {
+                // Push the stack to accommodate a call frame.
+                CallFrame *frame = (CallFrame *)m_StackPtr;
+                m_StackPtr += FRAME_SIZE;
+                // Store the current frame.
+                *frame = *m_Frame;
+            }
+
             case OP_CALL:
+                // TODO: Separate native calls
+                // TODO: Put call frames on the stack
             case OP_CALL_NATIVE: {
                 int argCount = READ_BYTE();
                 if (!CallValue(instruction == OP_CALL_NATIVE ? dtNativeFunc : dtFunction,

@@ -195,7 +195,8 @@ while(switchTest < 10) {
 printi(666);
 
 
-/*
+int someVal = 888;
+
 int doStuff(int a, int b) {
     for (float x = 0; x < 10; x = x + 1.6) {
         if (x == 3.2) {
@@ -210,8 +211,8 @@ int doStuff(int a, int b) {
     return a + b + someVal;
 }
 
-print (doStuff(100, 200));
-*/
+printi(doStuff(100, 200));
+
 
 // Stress Test!
 /*
