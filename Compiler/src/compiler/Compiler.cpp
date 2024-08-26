@@ -1705,15 +1705,21 @@ void Compiler::SwitchStatement() {
         // If there's no break statement or default case provided, we need to jump over the table body.
         int jumpTableStart = EmitJump(OP_JUMP);
 
-        // Put the default jump at the start so that it's always available to out-of-range values
-        EmitShort(defaultCase);
+        // Put the default jump at the start so that it's always available to out-of-range values.
+        int defaultJump = CURRENT_CODE_POS - defaultCase;
+        EmitShort(defaultJump);
 
         // Build table containing the entire range. Empty cases get the default jump address.
         for (int i = caseMin; i <= caseMax; ++i) {
-            int addr = defaultCase;
+            int addr;
             // If a case exists the addr will be updated.
-            jumpTable.Find(i, addr);
-            EmitShort(addr);
+            if (!jumpTable.Find(i, addr)) {
+                addr = defaultCase;
+            }
+            // Convert the address to an offset. The jump is backwards.
+            int jumpBack = CURRENT_CODE_POS - addr;
+
+            EmitShort(jumpBack);
         }
 
         // Patch the jump over the table body.
@@ -3250,14 +3256,6 @@ void Compiler::PatchArray(int offset, int size) {
 
 int Compiler::EmitJump(opCode_t jumpOp) {
 
-    /*
-    string jumpType;
-    if (jumpOp == OP_BREAK) jumpType = "Break";
-    else if (jumpOp == OP_CONTINUE) jumpType = "Continue";
-    else jumpType = "Jump";
-    MSG_V(jumpType + " @ " + std::to_string(CURRENT_CODE_POS));
-    */
-
     EmitShortArg(jumpOp, 0xFFFF);
 
     return CURRENT_CODE_POS - 2;
@@ -3279,8 +3277,6 @@ void Compiler::PatchJump(int offset) {
 
     CurrentFunction()->Code[offset] = mByte0(jump);
     CurrentFunction()->Code[offset + 1] = mByte1(jump);
-
-    //MSG_V("Patched Jump @ " + std::to_string(offset - 1) + " = " + std::to_string(jump));
 }
 
 void Compiler::EmitLoop(int loopStart) {

@@ -33,6 +33,8 @@
 #define THIS_ADDRESS                    FRAME_LOCALS[0]
 #define STACK_ADDRESS_OF(ptr)           (u32)(FindVariable(ptr) - PGM_GLOBALS);
 
+#define FRAME_SIZE                      (sizeof(CallFrame) / sizeof(Value))
+
 /* Instruction Readers */
 #define READ_BYTE()             (*m_Frame->Ip++)
 #define READ_UINT16()           (m_Frame->Ip += 2, (uint16_t)(m_Frame->Ip[-2] | (m_Frame->Ip[-1] << 8)))
@@ -559,10 +561,11 @@ void MecVm::Run(ProgramInfo *program) {
                     index = (max - min) + 2;
                 }
 
-                opCode_t *lbl = (m_Frame->Ip + (tableEndOffset - (index * 2))); // 16bit addresses
-                u16 caseLabel = (u16)(lbl[0] + (lbl[1] << 8));
-                // Case labels are stored as absolute positions rather than offsets.
-                m_Frame->Ip = &m_Program->Code.Data[caseLabel];
+                // Jump to the case label
+                m_Frame->Ip += (tableEndOffset - (index * 2)); // 16bit addresses
+                u16 caseJump = READ_UINT16();
+                // Case jumps are stored as offsets. Jump is backwards.
+                m_Frame->Ip -= (caseJump + 2);
 
                 break;
             }
