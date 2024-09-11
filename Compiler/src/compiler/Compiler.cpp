@@ -2496,10 +2496,10 @@ void Compiler::Call() {
         return;
     }
 
-    // TODO: Store the current call frame on the stack
-    //if (func->Type != ftNative) {
-    //    EmitByte(OP_FRAME);
-    //}
+    // Store the current call frame on the stack
+    if (func->Type != ftNative) {
+        EmitByte(OP_FRAME);
+    }
 
     VariableInfo *parentVar = nullptr;
     if (func->Type == ftClassMethod) {
@@ -3304,6 +3304,9 @@ void Compiler::EmitCall(opCode_t callOp, int argsCount) {
 }
 
 void Compiler::EmitCallDirect(ScriptFunction *function, VariableInfo *parentVar) {
+
+    // Store the stack frame
+    EmitByte(OP_FRAME);
 
     ConstantInfo funcId(dtFunction, FUNCTION_VAL(function->Id));
     EmitConstant(funcId);

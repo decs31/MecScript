@@ -165,11 +165,11 @@ int main(int argc, char *argv[]) {
 
     // Declare a program and give it a stack
     ProgramInfo prog{};
-    u8 stack[1024];
+    u8 stack[1024 * 8];
 
     // Create a VM and decode the program code into the program struct
     MecVm vm;
-    vm.DecodeProgram(pgmData.data(), pgmData.size(), stack, 1024, &prog);
+    vm.DecodeProgram(pgmData.data(), pgmData.size(), stack, 1024 * 8, &prog);
     MSG("Stack size after globals: " << (prog.Stack.Count * sizeof(Value)) << " bytes.");
 
     // Run the program

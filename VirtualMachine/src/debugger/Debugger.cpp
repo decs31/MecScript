@@ -276,6 +276,10 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             DBG_PRINT_VALUE_OP("Switch (Jump Table): ", offset);
             break;
         }
+        case OP_FRAME: {
+            MSG("FRAME");
+            break;
+        }
         case OP_CALL: {
             MSG("Call");
             break;

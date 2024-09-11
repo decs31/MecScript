@@ -57,11 +57,11 @@ private:
     VmStatus m_Status = vmOk;
 
     struct CallFrame {
-        u32 FunctionId;
-        DataType ReturnType;
-        u8 Arity;
+        CallFrame *Enclosing;
         opCode_t *Ip;
         Value *Slots;
+        DataType ReturnType;
+        u8 Arity;
     };
 
     Value *m_StackPtr = nullptr;
@@ -69,10 +69,7 @@ private:
 
     ProgramInfo *m_Program = nullptr;
 
-    // TODO: Move external
-    CallFrame m_Frames[VM_FRAMES_SIZE];
-    CallFrame *m_Frame = &m_Frames[0];
-    int m_FrameCount = 0;
+    CallFrame m_Frame;
 
     void Push(const Value &data);
     void PushN(u32 num);

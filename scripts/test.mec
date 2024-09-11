@@ -47,6 +47,7 @@ printi(a);
 */
 
 // Array Test
+/*
 println("=== Array Test ===");
 byte myArray[10] = { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
 myArray[0] += 100;
@@ -64,7 +65,7 @@ void printArray() {
 
 printArray();
 println("Array Test Done.");
-//*/
+*/
 
 // Float Test
 /*
@@ -165,7 +166,7 @@ printi(inc);
 
 
 // Switch Test
-
+/*
 println("=== Switch Test ===");
 int switchTest = 0;
 printi(switchTest);
@@ -212,7 +213,7 @@ int doStuff(int a, int b) {
 }
 
 printi(doStuff(100, 200));
-
+*/
 
 // Stress Test!
 /*
@@ -230,9 +231,9 @@ print("Result = ");
 printi(fibResult);
 print("Time (ms): ");
 printi(end - start);
-
+/*
 //printi(doStuff(1, 2));
-*/
+
 
 /*
 void pause(int ms) {
@@ -254,3 +255,18 @@ for (int tc = clock() - time; tc < 5000; tc = clock() - time) {
 
 printi(1111);
 */
+
+int funcTwo(int value) {
+    printi(value);
+    println("two");
+    return 200 + value;
+}
+
+int funcOne(int value) {
+    println("one");
+    printi(value);
+    return funcTwo(value);
+}
+
+printi(funcOne(1));
+println("Program End");

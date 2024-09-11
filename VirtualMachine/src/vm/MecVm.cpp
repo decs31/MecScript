@@ -29,17 +29,17 @@
 #define PGM_CONSTANTS                   CODE_CONSTANTS_START_PTR
 #define PGM_STRINGS                     STRINGS_START_PTR
 #define PGM_GLOBALS                     STACK_GLOBALS_START_PTR
-#define FRAME_LOCALS                    m_Frame->Slots
+#define FRAME_LOCALS                    m_Frame.Slots
 #define THIS_ADDRESS                    FRAME_LOCALS[0]
 #define STACK_ADDRESS_OF(ptr)           (u32)(FindVariable(ptr) - PGM_GLOBALS);
 
-#define FRAME_SIZE                      (sizeof(CallFrame) / sizeof(Value))
+#define FRAME_SIZE                      ((sizeof(CallFrame) / sizeof(Value)) + (sizeof(CallFrame) % sizeof(Value) > 0 ? 1 : 0))
 
 /* Instruction Readers */
-#define READ_BYTE()             (*m_Frame->Ip++)
-#define READ_UINT16()           (m_Frame->Ip += 2, (uint16_t)(m_Frame->Ip[-2] | (m_Frame->Ip[-1] << 8)))
-#define READ_UINT24()           (m_Frame->Ip += 3, (uint32_t)(m_Frame->Ip[-3] | (m_Frame->Ip[-2] << 8) | (m_Frame->Ip[-1] << 16)))
-#define READ_INT32()            (m_Frame->Ip += 4, (int32_t)(m_Frame->Ip[-4] | (m_Frame->Ip[-3] << 8) | (m_Frame->Ip[-2] << 16) | (m_Frame->Ip[-1] << 24)))
+#define READ_BYTE()             (*m_Frame.Ip++)
+#define READ_UINT16()           (m_Frame.Ip += 2, (uint16_t)(m_Frame.Ip[-2] | (m_Frame.Ip[-1] << 8)))
+#define READ_UINT24()           (m_Frame.Ip += 3, (uint32_t)(m_Frame.Ip[-3] | (m_Frame.Ip[-2] << 8) | (m_Frame.Ip[-1] << 16)))
+#define READ_INT32()            (m_Frame.Ip += 4, (int32_t)(m_Frame.Ip[-4] | (m_Frame.Ip[-3] << 8) | (m_Frame.Ip[-2] << 16) | (m_Frame.Ip[-1] << 24)))
 
 /* Instruction Macros */
 #define OP_BINARY(op, resultType, valueType) \
@@ -75,7 +75,7 @@ void MecVm::Run(ProgramInfo *program) {
     Reset();
 
     for (;;) {
-        DISASSEMBLE_INSTRUCTION(m_Program->Code.Data, m_Frame->Ip);
+        DISASSEMBLE_INSTRUCTION(m_Program->Code.Data, m_Frame.Ip);
         opCode_t instruction = READ_BYTE();
 
         switch (instruction) {
@@ -503,14 +503,14 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_JUMP:
             case OP_BREAK: {
                 u16 offset = READ_UINT16();
-                m_Frame->Ip += offset;
+                m_Frame.Ip += offset;
                 break;
             }
 
             case OP_JUMP_IF_FALSE: {
                 u16 offset = READ_UINT16();
                 if (IS_FALSEY(Peek())) {
-                    m_Frame->Ip += offset;
+                    m_Frame.Ip += offset;
                 }
                 break;
             }
@@ -518,7 +518,7 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_JUMP_IF_TRUE: {
                 u16 offset = READ_UINT16();
                 if (!IS_FALSEY(Peek())) {
-                    m_Frame->Ip += offset;
+                    m_Frame.Ip += offset;
                 }
                 break;
             }
@@ -527,7 +527,7 @@ void MecVm::Run(ProgramInfo *program) {
                 u16 offset = READ_UINT16();
                 // Type doesn't matter. Compare the bits.
                 if (AS_INT32(Pop()) == AS_INT32(Pop())) {
-                    m_Frame->Ip += offset;
+                    m_Frame.Ip += offset;
                 }
                 break;
             }
@@ -535,7 +535,7 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_CONTINUE:
             case OP_LOOP: {
                 u16 offset = READ_UINT16();
-                m_Frame->Ip -= offset;
+                m_Frame.Ip -= offset;
                 break;
             }
             
@@ -562,10 +562,10 @@ void MecVm::Run(ProgramInfo *program) {
                 }
 
                 // Jump to the case label
-                m_Frame->Ip += (tableEndOffset - (index * 2)); // 16bit addresses
+                m_Frame.Ip += (tableEndOffset - (index * 2)); // 16bit addresses
                 u16 caseJump = READ_UINT16();
                 // Case jumps are stored as offsets. Jump is backwards.
-                m_Frame->Ip -= (caseJump + 2);
+                m_Frame.Ip -= (caseJump + 2);
 
                 break;
             }
@@ -575,7 +575,9 @@ void MecVm::Run(ProgramInfo *program) {
                 CallFrame *frame = (CallFrame *)m_StackPtr;
                 m_StackPtr += FRAME_SIZE;
                 // Store the current frame.
-                *frame = *m_Frame;
+                *frame = m_Frame;
+                m_Frame.Enclosing = frame;
+                break;
             }
 
             case OP_CALL:
@@ -588,7 +590,7 @@ void MecVm::Run(ProgramInfo *program) {
                     // A call error occurred.
                     return;
                 }
-                m_Frame = &m_Frames[m_FrameCount - 1];
+                //m_Frame = &m_Frames[m_FrameCount - 1];
                 break;
             }
 
@@ -603,18 +605,24 @@ void MecVm::Run(ProgramInfo *program) {
             }
 
             case OP_RETURN: {
+                // Pop the return value off the stack
                 Value result = Pop();
-                m_FrameCount--;
-                if (m_FrameCount == 0) {
+
+                /*
+                if (m_Frame.Enclosing == nullptr) {
                     Pop();
                     SetStatus(vmEnd);
                     return;
                 }
+                 */
 
                 // Rewind the frame. -1 because the function itself was before the first arg.
-                m_StackPtr = m_Frame->Slots - 1;
+                m_StackPtr = m_Frame.Slots - 1;
+
+                // Roll back the stack frame
+                m_Frame = *m_Frame.Enclosing;
+
                 Push(result);
-                m_Frame = &m_Frames[m_FrameCount - 1];
                 break;
             }
 
@@ -730,33 +738,37 @@ void MecVm::Duplicate(u32 count) {
 
 bool MecVm::Call(funcPtr_t functionId, int argCount) {
 
-    if (m_FrameCount == VM_FRAMES_SIZE) {
+    if (m_StackPtr >= STACK_END_PTR) {
         SetStatus(vmCallFrameOverflow);
         return false;
     }
 
-    CallFrame *frame = &m_Frames[m_FrameCount++];
-    frame->FunctionId = functionId;
-    frame->Ip = (PGM_CODE + functionId + 3);
+    // Store the return Ip to the previously stored frame
+    if (m_Frame.Enclosing != nullptr) {
+        m_Frame.Enclosing->Ip = m_Frame.Ip;
+    }
+
+    // Update the new frame data
+    m_Frame.Ip = (PGM_CODE + functionId + 3);
     // Check we're at a valid function header
-    if (frame->Ip[-3] != OP_FUNCTION_START) {
+    if (m_Frame.Ip[-3] != OP_FUNCTION_START) {
         SetStatus(vmCallNotAFunction);
         return false;
     }
-    frame->ReturnType = (DataType) (frame->Ip[-2]);
-    frame->Arity = (u8) (frame->Ip[-1]);
+    m_Frame.ReturnType = (DataType) (m_Frame.Ip[-2]);
+    m_Frame.Arity = (u8) (m_Frame.Ip[-1]);
 
-    if (argCount != frame->Arity) {
+    if (argCount != m_Frame.Arity) {
         SetStatus(vmCallArgCountError);
         return false;
     }
 
     // Place the slot frame at the start of the arguments list.
     // ...[][this*][arg0][arg1][arg...]
-    frame->Slots = m_StackPtr - argCount;
+    m_Frame.Slots = m_StackPtr - argCount;
 
 #ifdef DEBUG_TRACE_EXECUTION
-    u32 pos = STACK_POS_AT(frame->Slots);
+    u32 pos = STACK_POS_AT(m_Frame->Slots);
     MSG("Call frame slots position: " << pos);
 #endif
 
@@ -813,17 +825,17 @@ VmStatus MecVm::SetStatus(VmStatus status) {
 void MecVm::Reset() {
 
     if (m_Program == nullptr) {
-        m_Frame = nullptr;
         m_StackPtr = nullptr;
         m_StackEnd = nullptr;
     } else {
-        m_FrameCount = 0;
-        m_Frame = &m_Frames[m_FrameCount++];
-        m_Frame->FunctionId = 0;
-        m_Frame->Slots = m_Program->Stack.Values;
-        m_Frame->Ip = m_Program->Code.Data;
         m_StackPtr = m_Program->Stack.Values;
         m_StackEnd = (m_Program->Stack.Values + m_Program->Stack.Count);
+        m_StackPtr += 1 + FRAME_SIZE;
+        m_Frame.Slots = m_StackPtr;
+        m_Frame.Ip = m_Program->Code.Data;
+        m_Frame.Enclosing = nullptr;
+        m_Frame.Arity = 0;
+        m_Frame.ReturnType = dtVoid;
     }
 }
 
