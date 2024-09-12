@@ -216,7 +216,7 @@ printi(doStuff(100, 200));
 */
 
 // Stress Test!
-/*
+
 println(" ");
 println("--- Stress Test: Fib ---");
 int fib(int n) {
@@ -231,7 +231,14 @@ print("Result = ");
 printi(fibResult);
 print("Time (ms): ");
 printi(end - start);
-/*
+
+if (fibResult == 9227465) {
+    println("Passed!");
+} else {
+    println("Failed!");
+}
+println("Test Done.");
+
 //printi(doStuff(1, 2));
 
 
@@ -256,6 +263,7 @@ for (int tc = clock() - time; tc < 5000; tc = clock() - time) {
 printi(1111);
 */
 
+/*
 int funcTwo(int value) {
     printi(value);
     println("two");
@@ -270,3 +278,4 @@ int funcOne(int value) {
 
 printi(funcOne(1));
 println("Program End");
+*/

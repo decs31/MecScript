@@ -573,7 +573,8 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_FRAME: {
                 // Push the stack to accommodate a call frame.
                 CallFrame *frame = (CallFrame *)m_StackPtr;
-                m_StackPtr += FRAME_SIZE;
+                int frameSize = FRAME_SIZE;
+                m_StackPtr += frameSize;
                 // Store the current frame.
                 *frame = m_Frame;
                 m_Frame.Enclosing = frame;
@@ -617,7 +618,7 @@ void MecVm::Run(ProgramInfo *program) {
                  */
 
                 // Rewind the frame. -1 because the function itself was before the first arg.
-                m_StackPtr = m_Frame.Slots - 1;
+                m_StackPtr = m_Frame.Slots - 1 - FRAME_SIZE;
 
                 // Roll back the stack frame
                 m_Frame = *m_Frame.Enclosing;
@@ -768,7 +769,7 @@ bool MecVm::Call(funcPtr_t functionId, int argCount) {
     m_Frame.Slots = m_StackPtr - argCount;
 
 #ifdef DEBUG_TRACE_EXECUTION
-    u32 pos = STACK_POS_AT(m_Frame->Slots);
+    u32 pos = STACK_POS_AT(m_Frame.Slots);
     MSG("Call frame slots position: " << pos);
 #endif
 
@@ -830,7 +831,6 @@ void MecVm::Reset() {
     } else {
         m_StackPtr = m_Program->Stack.Values;
         m_StackEnd = (m_Program->Stack.Values + m_Program->Stack.Count);
-        m_StackPtr += 1 + FRAME_SIZE;
         m_Frame.Slots = m_StackPtr;
         m_Frame.Ip = m_Program->Code.Data;
         m_Frame.Enclosing = nullptr;
