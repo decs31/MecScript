@@ -128,16 +128,13 @@ enum OpCode : opCode_t {
     OP_CONTINUE,
     OP_FRAME,
     OP_CALL,
-    OP_CALL_METHOD,
-    OP_CALL_NO_ARGS,
     OP_CALL_NATIVE,
     OP_RETURN,
 
 
-    // End
-    OP_END,
-
-    OP_FUNCTION_START = 255
+    // Reserved
+    OP_FUNCTION_START = 254,
+    OP_END = 255
 };
 
 struct CodeData {

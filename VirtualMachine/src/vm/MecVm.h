@@ -45,7 +45,7 @@ public:
     MecVm();
     ~MecVm();
 
-    bool DecodeProgram(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ProgramInfo *chunk);
+    static bool DecodeProgram(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ProgramInfo *program);
 
     void Run(ProgramInfo *program);
 
@@ -60,8 +60,6 @@ private:
         CallFrame *Enclosing;
         opCode_t *Ip;
         Value *Slots;
-        DataType ReturnType;
-        u8 Arity;
     };
 
     Value *m_StackPtr = nullptr;
@@ -82,7 +80,7 @@ private:
     void IncrementValue(const VmPointer &pointer, bool push);
     void DecrementValue(const VmPointer &pointer, bool push);
     bool Call(funcPtr_t functionId, int argCount);
-    bool CallValue(DataType funcType, Value callee, int argCount);
+    bool CallNative(NativeFuncId nativeId, int argCount);
     Value *String(const u32 index);
 
     static ResolverFunction FunctionResolver;

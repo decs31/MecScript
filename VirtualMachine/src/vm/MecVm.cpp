@@ -562,7 +562,7 @@ void MecVm::Run(ProgramInfo *program) {
                 }
 
                 // Jump to the case label
-                m_Frame.Ip += (tableEndOffset - (index * 2)); // 16bit addresses
+                m_Frame.Ip += (tableEndOffset - (index * 2)); // 16 bit addresses
                 u16 caseJump = READ_UINT16();
                 // Case jumps are stored as offsets. Jump is backwards.
                 m_Frame.Ip -= (caseJump + 2);
@@ -573,7 +573,7 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_FRAME: {
                 // Push the stack to accommodate a call frame.
                 CallFrame *frame = (CallFrame *)m_StackPtr;
-                int frameSize = FRAME_SIZE;
+                constexpr int frameSize = FRAME_SIZE;
                 m_StackPtr += frameSize;
                 // Store the current frame.
                 *frame = m_Frame;
@@ -581,25 +581,22 @@ void MecVm::Run(ProgramInfo *program) {
                 break;
             }
 
-            case OP_CALL:
-                // TODO: Separate native calls
-                // TODO: Put call frames on the stack
-            case OP_CALL_NATIVE: {
-                int argCount = READ_BYTE();
-                if (!CallValue(instruction == OP_CALL_NATIVE ? dtNativeFunc : dtFunction,
-                               Peek(argCount + 1), argCount)) {
+            case OP_CALL: {
+                const int argCount = READ_BYTE();
+                Value func = Peek(argCount + 1);
+                if (!Call(AS_FUNCTION(func), argCount)) {
                     // A call error occurred.
                     return;
                 }
-                //m_Frame = &m_Frames[m_FrameCount - 1];
                 break;
             }
 
-            case OP_CALL_NO_ARGS: {
-                int funcId = READ_UINT16();
-                int argCount = (instruction == OP_CALL_NO_ARGS) ? 0 : READ_BYTE();
-                if (!Call(funcId, argCount)) {
-                    // A Call error occurred.
+            case OP_CALL_NATIVE: {
+                const int argCount = READ_BYTE();
+                Value func = Peek(argCount + 1);
+                NativeFuncId nativeId = (NativeFuncId) AS_NATIVE(func);
+                if (!CallNative(nativeId, argCount)) {
+                    // A call error occurred.
                     return;
                 }
                 break;
@@ -608,14 +605,6 @@ void MecVm::Run(ProgramInfo *program) {
             case OP_RETURN: {
                 // Pop the return value off the stack
                 Value result = Pop();
-
-                /*
-                if (m_Frame.Enclosing == nullptr) {
-                    Pop();
-                    SetStatus(vmEnd);
-                    return;
-                }
-                 */
 
                 // Rewind the frame. -1 because the function itself was before the first arg.
                 m_StackPtr = m_Frame.Slots - 1 - FRAME_SIZE;
@@ -662,7 +651,7 @@ void MecVm::Push(const Value &data) {
     ++m_StackPtr;
 }
 
-void MecVm::PushN(u32 num) {
+void MecVm::PushN(const u32 num) {
 
 #ifdef STACK_BOUNDS_CHECKING
     if (m_StackPtr + num >= STACK_END_PTR) [[unlikely]] {
@@ -703,7 +692,7 @@ Value MecVm::Pop() {
     return *m_StackPtr;
 }
 
-Value MecVm::PopN(u32 num) {
+Value MecVm::PopN(const u32 num) {
 
 #ifdef STACK_BOUNDS_CHECKING
     if ((m_StackPtr - num) < STACK_LOCALS_START_PTR) [[unlikely]]
@@ -718,7 +707,7 @@ Value MecVm::PopN(u32 num) {
     return *m_StackPtr;
 }
 
-Value MecVm::Peek(u32 pos) {
+Value MecVm::Peek(const u32 pos) {
 
 #ifdef STACK_BOUNDS_CHECKING
     if ((m_StackPtr - pos) < STACK_LOCALS_START_PTR) [[unlikely]] {
@@ -730,14 +719,14 @@ Value MecVm::Peek(u32 pos) {
     return *(m_StackPtr - pos);
 }
 
-void MecVm::Duplicate(u32 count) {
+void MecVm::Duplicate(const u32 count) {
 
     for (u32 i = 0; i < count; ++i) {
         Push(Peek(count));
     }
 }
 
-bool MecVm::Call(funcPtr_t functionId, int argCount) {
+bool MecVm::Call(const funcPtr_t functionId, const int argCount) {
 
     if (m_StackPtr >= STACK_END_PTR) {
         SetStatus(vmCallFrameOverflow);
@@ -756,10 +745,14 @@ bool MecVm::Call(funcPtr_t functionId, int argCount) {
         SetStatus(vmCallNotAFunction);
         return false;
     }
-    m_Frame.ReturnType = (DataType) (m_Frame.Ip[-2]);
-    m_Frame.Arity = (u8) (m_Frame.Ip[-1]);
 
-    if (argCount != m_Frame.Arity) {
+    // Return Type
+    // Info is stored in the code but not currently used
+    // const DataType returnType = (DataType)(m_Frame.Ip[-2]);
+
+    // Sanity check the arg count
+    const u8 arity = m_Frame.Ip[-1];
+    if ( argCount != arity) {
         SetStatus(vmCallArgCountError);
         return false;
     }
@@ -776,36 +769,27 @@ bool MecVm::Call(funcPtr_t functionId, int argCount) {
     return true;
 }
 
-bool MecVm::CallValue(DataType funcType, Value callee, int argCount) {
-
-    switch (funcType) {
-        case dtFunction:
-            return Call(AS_FUNCTION(callee), argCount);
-        case dtNativeFunc: {
-            auto funcId = (NativeFuncId) AS_NATIVE(callee);
-            NativeFunc nativeFunc = ResolveNativeFunction(funcId, argCount);
-            if (nativeFunc == nullptr) {
-                // Function couldn't be resolved.
-                SetStatus(vmNativeFunctionNotResolved);
-                return false;
-            }
-            Value *args;
-            if (funcId == nfPrint || funcId == nfPrintLn) {
-                args = String((m_StackPtr - argCount)->UInt);
-            } else {
-                args = (m_StackPtr - argCount);
-            }
-            Value result = nativeFunc(argCount, args);
-            m_StackPtr -= (argCount + 1);
-            Push(result);
-            return true;
-        }
-        default:
-            break;
+bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
+    NativeFunc nativeFunc = ResolveNativeFunction(nativeId, argCount);
+    if (nativeFunc == nullptr) {
+        // Function couldn't be resolved.
+        SetStatus(vmNativeFunctionNotResolved);
+        return false;
     }
 
-    SetStatus(vmCalledNonCallable);
-    return false;
+    Value *args;
+    if (nativeId == nfPrint || nativeId == nfPrintLn) {
+        args = String((m_StackPtr - argCount)->UInt);
+    } else {
+        args = (m_StackPtr - argCount);
+    }
+
+    Value result = nativeFunc(argCount, args);
+
+    m_StackPtr -= (argCount + 1);
+    Push(result);
+
+    return true;
 }
 
 Value *MecVm::String(const u32 index) {
@@ -834,17 +818,15 @@ void MecVm::Reset() {
         m_Frame.Slots = m_StackPtr;
         m_Frame.Ip = m_Program->Code.Data;
         m_Frame.Enclosing = nullptr;
-        m_Frame.Arity = 0;
-        m_Frame.ReturnType = dtVoid;
     }
 }
 
-bool MecVm::DecodeProgram(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ProgramInfo *chunk) {
+bool MecVm::DecodeProgram(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ProgramInfo *program) {
 
-    if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || chunk == nullptr)
+    if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || program == nullptr)
         return false;
 
-    auto *header = (ProgramBinaryHeader *) data;
+    ProgramBinaryHeader *header = (ProgramBinaryHeader *) data;
 
     // Validate the header
     if (header->HeaderSize != sizeof (ProgramBinaryHeader))
@@ -867,16 +849,16 @@ bool MecVm::DecodeProgram(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, Prog
     // Make sure the stack is aligned properly.
     while ((stackOffset & 0x03) != 0) ++stackOffset;
 
-    chunk->Code.Data = (data + header->CodePos);
-    chunk->Code.Length = (header->ConstantsPos / sizeof(opCode_t));
-    chunk->Constants.Values = (Value *) (data + header->ConstantsPos);
-    chunk->Constants.Count = ((header->StringsPos - header->ConstantsPos) / sizeof(Value));
-    chunk->Strings.Values = (Value *) (data + header->StringsPos);
-    chunk->Strings.Count = ((dataSize - header->StringsPos) / sizeof(Value));
-    chunk->Globals.Values = (Value *) stack;
-    chunk->Globals.Count = (header->GlobalsSize / sizeof(Value));
-    chunk->Stack.Values = (Value *) (stack + stackOffset);
-    chunk->Stack.Count = (stackSize - stackOffset) / sizeof(Value);
+    program->Code.Data = (data + header->CodePos);
+    program->Code.Length = (header->ConstantsPos / sizeof(opCode_t));
+    program->Constants.Values = (Value *) (data + header->ConstantsPos);
+    program->Constants.Count = ((header->StringsPos - header->ConstantsPos) / sizeof(Value));
+    program->Strings.Values = (Value *) (data + header->StringsPos);
+    program->Strings.Count = ((dataSize - header->StringsPos) / sizeof(Value));
+    program->Globals.Values = (Value *) stack;
+    program->Globals.Count = (header->GlobalsSize / sizeof(Value));
+    program->Stack.Values = (Value *) (stack + stackOffset);
+    program->Stack.Count = (stackSize - stackOffset) / sizeof(Value);
 
     return true;
 }
