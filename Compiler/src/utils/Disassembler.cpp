@@ -622,12 +622,6 @@ string Disassembler::ReadInstruction() {
                 desc = "[Arg Count] Calls a native function";
                 break;
             }
-            case OP_CALL_NO_ARGS: {
-                u16 funcId = READ_UINT16();
-                instr = WriteInstruction(addr, "CALL_NO_ARG", STRING(funcId));
-                desc = "[Func ID] Calls a function";
-                break;
-            }
             case OP_RETURN: {
                 instr = WriteInstruction(addr, "RETURN");
                 desc = "Return from called function";
