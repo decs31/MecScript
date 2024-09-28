@@ -821,26 +821,26 @@ void MecVm::Reset() {
     }
 }
 
-bool MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script) {
+u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script) {
 
     if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || script == nullptr)
-        return false;
+        return 0;
 
     ScriptBinaryHeader *header = (ScriptBinaryHeader *) data;
 
     // Validate the header
     if (header->HeaderSize != sizeof (ScriptBinaryHeader))
-        return false;
+        return 0;
 
-    // Validate the data size
-    if (header->TotalSize != dataSize) {
-        return false;
+    // Validate the entire script will fit in the given data
+    if (header->TotalSize > dataSize) {
+        return 0;
     }
 
     // Checksum
-    u32 checksum = Checksum::Calculate(data + header->CodePos, dataSize - header->CodePos);
+    u32 checksum = Checksum::Calculate(data + header->CodePos, header->TotalSize - header->CodePos);
     if (checksum != header->CheckSum) {
-        return false;
+        return 0;
     }
 
     // Globals fill up the bottom of the stack.
@@ -860,7 +860,7 @@ bool MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stac
     script->Stack.Values = (Value *) (stack + stackOffset);
     script->Stack.Count = (stackSize - stackOffset) / sizeof(Value);
 
-    return true;
+    return header->TotalSize;
 }
 
 void MecVm::SetNativeFunctionResolver(ResolverFunction resolver) {

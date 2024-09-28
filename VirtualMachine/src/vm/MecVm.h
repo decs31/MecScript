@@ -41,7 +41,7 @@ public:
     MecVm();
     ~MecVm();
 
-    static bool DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script);
+    static u32 DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script);
 
     void Run(ScriptInfo *script);
 
