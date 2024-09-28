@@ -16,11 +16,6 @@
 
 #define VIRTUAL_MACHINE_NAME        "MecVm"
 
-#define VM_SIZE_BYTES               (1024 * 8)
-#define VM_FRAMES_SIZE              (64)
-#define VM_FRAMES_SIZE_BYTES        (VM_FRAMES_SIZE * sizeof (CallFrame))
-#define VM_VALUE_SIZE               ((VM_SIZE_BYTES - VM_FRAMES_SIZE_BYTES) / sizeof(Value))
-
 
 enum VmStatus {
     vmOk = 0,
@@ -46,9 +41,9 @@ public:
     MecVm();
     ~MecVm();
 
-    static bool DecodeScript(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ScriptInfo *program);
+    static bool DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script);
 
-    void Run(ScriptInfo *program);
+    void Run(ScriptInfo *script);
 
     void Reset();
 
@@ -66,7 +61,7 @@ private:
     Value *m_StackPtr = nullptr;
     Value *m_StackEnd = nullptr;
 
-    ScriptInfo *m_Program = nullptr;
+    ScriptInfo *m_Script = nullptr;
 
     CallFrame m_Frame;
 
@@ -77,7 +72,7 @@ private:
     Value Peek(u32 pos = 1);
     void Duplicate(u32 count = 1);
 
-    Value *FindVariable(const VmPointer &pointer);
+    Value *ResolvePointer(const VmPointer &pointer);
     void IncrementValue(const VmPointer &pointer, bool push);
     void DecrementValue(const VmPointer &pointer, bool push);
     bool Call(funcPtr_t functionId, int argCount);
