@@ -3523,26 +3523,30 @@ while(FILE_POS % 4 > 0) { \
                      "Total:          " + std::to_string(totalSize) + " bytes\n" +
                      "Min Slots Size: " + std::to_string((m_LocalsMax * sizeof(Value))) + " bytes\n\r"
     );
+
+#undef WRITE_BYTE
+#undef FILE_POS
+#undef PADD_BYTES
 }
 
 void Compiler::Cleanup() {
     // Functions
-    for (auto func : m_Functions) {
+    for (const auto func : m_Functions) {
         delete(func);
     }
     m_Functions.clear();
 
     // Classes
-    for (auto klass : m_Classes) {
+    for (const auto klass : m_Classes) {
         delete(klass);
     }
     m_Classes.clear();
 
     // Variables
-    for (auto global : m_Globals) {
+    for (const auto global : m_Globals) {
         delete(global);
     }
-    for (auto shared : m_SharedGlobals) {
+    for (const auto shared : m_SharedGlobals) {
         delete(shared);
     }
 
@@ -3550,7 +3554,7 @@ void Compiler::Cleanup() {
     m_ConstStrings.clear();
 }
 
-string Compiler::DataTypeToString(DataType dataType) {
+string Compiler::DataTypeToString(const DataType dataType) {
 
     switch (dataType) {
         case dtNone:
