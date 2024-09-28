@@ -3,7 +3,8 @@
 //
 
 #include "Debugger.h"
-#include "../../Compiler/src/utils/ScriptUtils.h"
+#include "Console.h"
+#include "ScriptUtils.h"
 
 #define DBG_PRINT_VALUE_OP(op, val)      MSG(op << "(" << val << ")")
 #define DBG_READ_UINT8(codePtr)          (u32)((codePtr)[0])
@@ -11,14 +12,14 @@
 #define DBG_READ_UINT24(codePtr)         (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16))
 #define DBG_READ_UINT32(codePtr)         (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16) | ((codePtr)[3] << 24))
 
-void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
+void Debugger::DebugInstruction(const opCode_t *codeStart, const opCode_t *code) {
 
-    size_t codePos = code - codeStart;
+    const size_t codePos = code - codeStart;
     PRINT("Code[" << codePos << "]: ");
 
+    const opCode_t op = code[0];
+    const opCode_t *valPtr = code + 1;
 
-    opCode_t op = code[0];
-    opCode_t *valPtr = code + 1;
     switch (op) {
         case OP_NOP: {
             MSG("No Operation");
@@ -29,7 +30,7 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             break;
         }
         case OP_PUSH_N: {
-            u32 count = DBG_READ_UINT8(valPtr);
+            const u32 count = DBG_READ_UINT8(valPtr);
             DBG_PRINT_VALUE_OP("PushN", count);
             break;
         }
@@ -38,7 +39,7 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             break;
         }
         case OP_POP_N: {
-            u32 count = DBG_READ_UINT8(valPtr);
+            const u32 count = DBG_READ_UINT8(valPtr);
             DBG_PRINT_VALUE_OP("PopN", count);
             break;
         }
@@ -63,7 +64,7 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             break;
         }
         case OP_CONSTANT: {
-            u32 addr = DBG_READ_UINT8(valPtr);
+            const u32 addr = DBG_READ_UINT8(valPtr);
             DBG_PRINT_VALUE_OP("PushConst", addr);
             break;
         }
@@ -73,7 +74,7 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
             break;
         }
         case OP_CONSTANT_24: {
-            u32 addr = DBG_READ_UINT24(valPtr);
+            const u32 addr = DBG_READ_UINT24(valPtr);
             DBG_PRINT_VALUE_OP("PushConst24", addr);
             break;
         }
@@ -237,42 +238,42 @@ void Debugger::DebugInstruction(opCode_t *codeStart, opCode_t *code) {
 
             // Functions
         case OP_JUMP: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Jump: ", offset);
             break;
         }
         case OP_BREAK: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Break: ", offset);
             break;
         }
         case OP_CONTINUE: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Continue: ", offset);
             break;
         }
         case OP_JUMP_IF_FALSE: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Jump If False: ", offset);
             break;
         }
         case OP_JUMP_IF_TRUE: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Jump If True: ", offset);
             break;
         }
         case OP_JUMP_IF_EQUAL: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Jump If Equal: ", offset);
             break;
         }
         case OP_LOOP: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Loop (Jump Back): ", offset);
             break;
         }
         case OP_SWITCH: {
-            u32 offset = DBG_READ_UINT16(valPtr);
+            const u32 offset = DBG_READ_UINT16(valPtr);
             DBG_PRINT_VALUE_OP("Switch (Jump Table): ", offset);
             break;
         }

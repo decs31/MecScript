@@ -6,14 +6,13 @@
 #define DEBUGGER_H_
 
 
-#include <vector>
 #include <string>
 #include <iostream>
 #include "Instructions.h"
-#include "Console.h"
+#include "Value.h"
 
 namespace Debugger {
-    void DebugInstruction(opCode_t *codeStart, opCode_t *code);
+    void DebugInstruction(const opCode_t *codeStart, const opCode_t *code);
 
     std::string PrintValue(const Value &value);
 }

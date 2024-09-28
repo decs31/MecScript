@@ -12,6 +12,14 @@
 #include "Variable.h"
 #include "Tokens.h"
 
+enum FunctionType {
+    ftScript,
+    ftFunction,
+    ftClassInit,
+    ftClassMethod,
+    ftNative,
+};
+
 class FunctionInfo {
 public:
     string Name;

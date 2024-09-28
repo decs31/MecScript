@@ -11,8 +11,9 @@
 #include "MecVm.h"
 #include "Console.h"
 
+#define STACK_SIZE 0x1000
 
-static Value NativePrint(int argCount, Value *args) {
+static Value NativePrint(const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -24,7 +25,7 @@ static Value NativePrint(int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintLine(int argCount, Value *args) {
+static Value NativePrintLine(const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -36,7 +37,7 @@ static Value NativePrintLine(int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintI(int argCount, Value *args) {
+static Value NativePrintI(const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -48,7 +49,7 @@ static Value NativePrintI(int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintF(int argCount, Value *args) {
+static Value NativePrintF(const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -143,42 +144,42 @@ int main(int argc, char *argv[]) {
 
     std::cout << "<<<< MecScript Virtual Machine >>>>" << std::endl;
 
-    std::ifstream pgmFile(inputFilePath, std::fstream::binary);
+    std::ifstream scriptFile(inputFilePath, std::fstream::binary);
 
-    if (!pgmFile.good()) {
+    if (!scriptFile.good()) {
         ERR("File does not exist or cannot be opened: \"" << inputFilePath << "\"");
         exit(ERROR_FILE_NOT_FOUND);
     }
 
     MSG("Reading input file: \"" << inputFilePath << "\"");
-    std::vector<unsigned char> pgmData(std::istreambuf_iterator<char>(pgmFile), {});
+    std::vector<unsigned char> scriptData(std::istreambuf_iterator<char>(scriptFile), {});
 
-    if (pgmData.empty()) {
+    if (scriptData.empty()) {
         ERR("Program binary is empty.");
         exit(ERROR_INVALID_DATA);
     }
 
-    MSG("Program size: " << pgmData.size() << " bytes.");
+    MSG("Program size: " << scriptData.size() << " bytes.");
 
     // Give the VM a way to access native functions
     MecVm::SetNativeFunctionResolver(ResolveNativeFunction);
 
-    // Declare a program and give it a stack
-    ProgramInfo prog{};
-    u8 stack[1024 * 8];
+    // Declare a script and give it a stack
+    ScriptInfo script{};
+    u8 stack[STACK_SIZE];
 
-    // Create a VM and decode the program code into the program struct
+    // Create a VM and decode the script code into the script struct
     MecVm vm;
-    vm.DecodeProgram(pgmData.data(), pgmData.size(), stack, 1024 * 8, &prog);
-    MSG("Stack size after globals: " << (prog.Stack.Count * sizeof(Value)) << " bytes.");
+    vm.DecodeScript(scriptData.data(), scriptData.size(), stack, STACK_SIZE, &script);
+    MSG("Stack size after globals: " << (script.Stack.Count * sizeof(Value)) << " bytes.");
 
-    // Run the program
-    MSG("======== Program Start ========");
-    vm.Run(&prog);
+    // Run the script
+    MSG("======== Script Start ========");
+    vm.Run(&script);
 
-    MSG("\n====== Program Finished =======");
+    MSG("\n====== Script Finished =======");
 
-    pgmFile.close();
+    scriptFile.close();
 
     return 0;
 }

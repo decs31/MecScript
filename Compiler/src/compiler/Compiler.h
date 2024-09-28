@@ -6,7 +6,6 @@
 #define COMPILER_H_
 
 #include "CompilerData.h"
-#include <set>
 #include <bits/shared_ptr.h>
 #include "MecScriptBase.h"
 #include "ErrorHandler.h"
@@ -16,7 +15,6 @@
 #include "Function.h"
 #include "Variable.h"
 #include "Class.h"
-#include "Array.h"
 #include "../preprocessor/PreProcessor.h"
 
 #define LANG_HEADER_CONST       0x8008

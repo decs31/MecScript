@@ -2,8 +2,8 @@
 // Created by Declan Walsh on 1/06/2024.
 //
 
-#ifndef MECSCRIPT_BASICTYPES_H
-#define MECSCRIPT_BASICTYPES_H
+#ifndef BASICTYPES_H
+#define BASICTYPES_H
 
 #include <cstdint>
 
@@ -16,4 +16,4 @@ typedef uint32_t u32;
 typedef int64_t s64;
 typedef uint64_t u64;
 
-#endif //MECSCRIPT_BASICTYPES_H
+#endif //BASICTYPES_H

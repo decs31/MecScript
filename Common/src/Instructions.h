@@ -5,7 +5,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
-#include "Value.h"
+#include "BasicTypes.h"
 
 typedef uint8_t opCode_t;
 
@@ -135,47 +135,6 @@ enum OpCode : opCode_t {
     // Reserved
     OP_FUNCTION_START = 254,
     OP_END = 255
-};
-
-struct CodeData {
-    opCode_t *Data;
-    u32 Length;
-};
-
-struct ValueData {
-    Value *Values;
-    u32 Count;
-};
-
-enum FunctionType {
-    ftScript,
-    ftFunction,
-    ftClassInit,
-    ftClassMethod,
-    ftNative,
-};
-
-struct ProgramInfo {
-    CodeData Code;
-    ValueData Constants;
-    ValueData Strings;
-    ValueData Globals;
-    ValueData Stack;
-};
-
-struct ProgramBinaryHeader {
-    u8 HeaderSize;
-    u8 HeaderVersion;
-    u8 LangVersionMajor;
-    u8 LangVersionMinor;
-    u16 BuildDay; // Days sine 01/01/2000
-    u16 BuildTime; // Seconds since midnight / 2
-    u32 CodePos; // Bytes
-    u32 ConstantsPos; // Bytes
-    u32 StringsPos; // Bytes
-    u32 GlobalsSize; // Bytes
-    u32 TotalSize; // Bytes
-    u32 CheckSum; // XOR byte code
 };
 
 #endif //INSTRUCTIONS_H

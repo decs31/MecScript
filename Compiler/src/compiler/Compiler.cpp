@@ -11,6 +11,7 @@
 #include "JumpTable.hpp"
 #include "Checksum.h"
 #include "Disassembler.h"
+#include "ScriptInfo.h"
 
 #define CURRENT_TOKEN_POS       m_CurrentPos
 #define CURRENT_CODE_POS        (int)CurrentFunction()->Code.size()
@@ -3407,8 +3408,8 @@ while(FILE_POS % 4 > 0) { \
     GetBuildTimeStamp(buildDay, buildSeconds);
 
     // Write Header
-    ProgramBinaryHeader header{
-            .HeaderSize = sizeof(ProgramBinaryHeader),
+    ScriptBinaryHeader header{
+            .HeaderSize = sizeof(ScriptBinaryHeader),
             .HeaderVersion = 0,
             .LangVersionMajor = LANG_VERSION_MAJOR,
             .LangVersionMinor = LANG_VERSION_MINOR,
@@ -3426,7 +3427,7 @@ while(FILE_POS % 4 > 0) { \
     fileBytes.reserve(header.HeaderSize + header.CodePos + header.ConstantsPos + header.StringsPos + 64);
 
     auto *headerBytes = (uint8_t *) &header;
-    for (uint32_t i = 0; i < sizeof(ProgramBinaryHeader); ++i) {
+    for (uint32_t i = 0; i < sizeof(ScriptBinaryHeader); ++i) {
         WRITE_BYTE(headerBytes[i]);
     }
 
@@ -3488,7 +3489,7 @@ while(FILE_POS % 4 > 0) { \
 
     // Patch the start positions and checksum value
     u32 checksum = Checksum::Calculate((fileBytes.data() + codeStart), fileBytes.size() - codeStart);
-    auto *fileHeader = (ProgramBinaryHeader *) (fileBytes.data());
+    auto *fileHeader = (ScriptBinaryHeader *) (fileBytes.data());
     fileHeader->CheckSum = checksum;
     fileHeader->CodePos = codeStart;
     fileHeader->ConstantsPos = constantsStart;

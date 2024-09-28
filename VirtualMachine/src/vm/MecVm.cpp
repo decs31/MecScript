@@ -61,7 +61,7 @@ MecVm::MecVm() {
 MecVm::~MecVm() {
 }
 
-void MecVm::Run(ProgramInfo *program) {
+void MecVm::Run(ScriptInfo *program) {
 
     m_Program = program;
 
@@ -821,15 +821,15 @@ void MecVm::Reset() {
     }
 }
 
-bool MecVm::DecodeProgram(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ProgramInfo *program) {
+bool MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *program) {
 
     if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || program == nullptr)
         return false;
 
-    ProgramBinaryHeader *header = (ProgramBinaryHeader *) data;
+    ScriptBinaryHeader *header = (ScriptBinaryHeader *) data;
 
     // Validate the header
-    if (header->HeaderSize != sizeof (ProgramBinaryHeader))
+    if (header->HeaderSize != sizeof (ScriptBinaryHeader))
         return false;
 
     // Validate the data size

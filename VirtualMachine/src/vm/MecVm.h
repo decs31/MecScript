@@ -8,6 +8,7 @@
 #include "Value.h"
 #include "Instructions.h"
 #include "NativeFunctions.h"
+#include "ScriptInfo.h"
 
 /* MUST BE INCLUDED BY APPLICATION */
 #include "VmConfig.h"
@@ -45,9 +46,9 @@ public:
     MecVm();
     ~MecVm();
 
-    static bool DecodeProgram(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ProgramInfo *program);
+    static bool DecodeScript(u8 *data, u32 dataSize, u8 *stack, u32 stackSize, ScriptInfo *program);
 
-    void Run(ProgramInfo *program);
+    void Run(ScriptInfo *program);
 
     void Reset();
 
@@ -65,7 +66,7 @@ private:
     Value *m_StackPtr = nullptr;
     Value *m_StackEnd = nullptr;
 
-    ProgramInfo *m_Program = nullptr;
+    ScriptInfo *m_Program = nullptr;
 
     CallFrame m_Frame;
 

@@ -1,0 +1,44 @@
+//
+// Created by Declan Walsh on 28/09/2024.
+//
+
+#ifndef SCRIPTINFO_H
+#define SCRIPTINFO_H
+
+#include "Instructions.h"
+#include "Value.h"
+
+struct CodeData {
+    opCode_t *Data;
+    u32 Length;
+};
+
+struct ValueData {
+    Value *Values;
+    u32 Count;
+};
+
+struct ScriptInfo {
+    CodeData Code;
+    ValueData Constants;
+    ValueData Strings;
+    ValueData Globals;
+    ValueData Stack;
+};
+
+struct ScriptBinaryHeader {
+    u8 HeaderSize;
+    u8 HeaderVersion;
+    u8 LangVersionMajor;
+    u8 LangVersionMinor;
+    u16 BuildDay; // Days sine 01/01/2000
+    u16 BuildTime; // Seconds since midnight / 2
+    u32 CodePos; // Bytes
+    u32 ConstantsPos; // Bytes
+    u32 StringsPos; // Bytes
+    u32 GlobalsSize; // Bytes
+    u32 TotalSize; // Bytes
+    u32 CheckSum; // XOR byte code
+};
+
+#endif //SCRIPTINFO_H

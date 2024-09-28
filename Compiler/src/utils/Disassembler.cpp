@@ -5,6 +5,7 @@
 #include <format>
 #include "Disassembler.h"
 #include "Checksum.h"
+#include "ScriptInfo.h"
 
 // Handy Macros
 #define STRING(var)             std::to_string(var)
@@ -48,11 +49,11 @@ void Disassembler::OutputLine(const string &line) {
 }
 
 bool Disassembler::ReadHeader() {
-    if (m_Code == nullptr || m_Length < sizeof (ProgramBinaryHeader))
+    if (m_Code == nullptr || m_Length < sizeof (ScriptBinaryHeader))
         return false;
 
-    ProgramBinaryHeader *header = (ProgramBinaryHeader *)m_Code;
-    if (header->HeaderSize != sizeof (ProgramBinaryHeader)) {
+    ScriptBinaryHeader *header = (ScriptBinaryHeader *)m_Code;
+    if (header->HeaderSize != sizeof (ScriptBinaryHeader)) {
         OutputLine("Script header invalid!");
         return false;
     }
