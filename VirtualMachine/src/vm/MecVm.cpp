@@ -64,7 +64,7 @@ MecVm::MecVm() {
 MecVm::~MecVm() {
 }
 
-void MecVm::GetLangaugeVersion(u8 &major, u8 &minor) {
+void MecVm::GetLanguageVersion(u8 &major, u8 &minor) {
 
     major = LANG_VERSION_MAJOR;
     minor = LANG_VERSION_MINOR;
