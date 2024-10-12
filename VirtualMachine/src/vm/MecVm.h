@@ -49,6 +49,8 @@ public:
 
     static void SetNativeFunctionResolver(ResolverFunction resolver);
 
+    static void GetLangaugeVersion(u8 &major, u8 &minor);
+
 private:
     VmStatus m_Status = vmOk;
 

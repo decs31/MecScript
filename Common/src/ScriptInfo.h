@@ -8,6 +8,9 @@
 #include "Instructions.h"
 #include "Value.h"
 
+#define LANG_VERSION_MAJOR      0
+#define LANG_VERSION_MINOR      1
+
 struct CodeData {
     opCode_t *Data;
     u32 Length;

@@ -3,6 +3,9 @@
 //
 
 #include "MecVm.h"
+
+#include <algorithm>
+
 #include "Checksum.h"
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -60,6 +63,13 @@ MecVm::MecVm() {
 
 MecVm::~MecVm() {
 }
+
+void MecVm::GetLangaugeVersion(u8 &major, u8 &minor) {
+
+    major = LANG_VERSION_MAJOR;
+    minor = LANG_VERSION_MINOR;
+}
+
 
 void MecVm::Run(ScriptInfo *script) {
 

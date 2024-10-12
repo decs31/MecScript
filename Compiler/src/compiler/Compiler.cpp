@@ -3,6 +3,8 @@
 //
 
 #include "Compiler.h"
+
+#include <chrono>
 #include <fstream>
 #include <map>
 #include "Options.h"
@@ -3374,8 +3376,41 @@ u32 Compiler::GlobalsSizeInBytes() {
 
 void Compiler::GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds) {
 
-    outDays = 8860;
-    outSeconds = 4000;
+    // Define the start date (January 1, 2000)
+    std::tm startDate = {};
+    startDate.tm_year = 2000 - 1900;  // tm_year is years since 1900
+    startDate.tm_mon = 0;  // January is month 0
+    startDate.tm_mday = 1;  // Day of the month
+
+    // Get the time point corresponding to that start date
+    const std::time_t startTime = std::mktime(&startDate);
+    const std::chrono::system_clock::time_point startPoint = std::chrono::system_clock::from_time_t(startTime);
+
+    // Get the current time
+    const auto now = std::chrono::system_clock::now();
+
+    // Calculate the duration in days
+    const auto days = std::chrono::duration_cast<std::chrono::days>(now - startPoint).count();
+
+    // Get the local time
+    const std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
+    const std::tm* localTime = std::localtime(&nowTime);
+
+    // Create a time struct representing today's date at midnight (00:00:00)
+    std::tm midnight = *localTime;  // Copy the current time
+    midnight.tm_hour = 0;
+    midnight.tm_min = 0;
+    midnight.tm_sec = 0;
+
+    // Convert midnight to a time_point
+    const std::time_t midnightTime = std::mktime(&midnight);
+    const auto midnightPoint = std::chrono::system_clock::from_time_t(midnightTime);
+
+    // Calculate the seconds since midnight
+    const auto secondsSinceMidnight = std::chrono::duration_cast<std::chrono::seconds>(now - midnightPoint).count();
+
+    outDays = static_cast<uint16_t>(days);
+    outSeconds = static_cast<uint16_t>(secondsSinceMidnight / 2);
 }
 
 /* Updates the function pointers to their actual position in the byte code output. */

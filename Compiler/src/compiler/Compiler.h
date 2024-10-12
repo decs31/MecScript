@@ -17,10 +17,6 @@
 #include "Class.h"
 #include "../preprocessor/PreProcessor.h"
 
-#define LANG_HEADER_CONST       0x8008
-#define LANG_VERSION_MAJOR      0
-#define LANG_VERSION_MINOR      1
-
 
 class Compiler : public MecScriptBase {
 public:
@@ -269,7 +265,7 @@ private:
     void SanityCheck();
     u32 GetCodeSize();
     u32 CalculateChecksum(const u8 *data, u32 length);
-    void GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds);
+    static void GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds);
 
     /* Error Handling */
     bool m_PanicMode = false;
