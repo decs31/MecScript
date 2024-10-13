@@ -7,7 +7,7 @@
 
 #define COMPILER_NAME           "MecCompile.exe"
 #define SCRIPT_EXTENSION        "mec"
-#define OUTPUT_EXTENSION        "bin"
+#define OUTPUT_EXTENSION        "mbin"
 
 #define VERBOSE_OUTPUT
 

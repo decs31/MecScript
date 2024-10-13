@@ -642,7 +642,7 @@ void MecVm::Run(ScriptInfo *script) {
 void MecVm::Push(const Value &data) {
 
 #ifdef STACK_BOUNDS_CHECKING
-    if (m_StackPtr >= STACK_END_PTR) [[unlikely]] {
+    if (m_StackPtr >= STACK_END_PTR) {
         SetStatus(vmStackOverflow);
 #ifdef DEBUG_TRACE_EXECUTION
         MSG("STACK OVERFLOW!");
@@ -664,7 +664,7 @@ void MecVm::Push(const Value &data) {
 void MecVm::PushN(const u32 num) {
 
 #ifdef STACK_BOUNDS_CHECKING
-    if (m_StackPtr + num >= STACK_END_PTR) [[unlikely]] {
+    if (m_StackPtr + num >= STACK_END_PTR) {
         SetStatus(vmStackOverflow);
 #ifdef DEBUG_TRACE_EXECUTION
         MSG("STACK OVERFLOW!");
@@ -683,7 +683,7 @@ void MecVm::PushN(const u32 num) {
 Value MecVm::Pop() {
 
 #ifdef STACK_BOUNDS_CHECKING
-    if (m_StackPtr <= STACK_LOCALS_START_PTR) [[unlikely]] {
+    if (m_StackPtr <= STACK_LOCALS_START_PTR) {
         SetStatus(vmStackOverflow);
 #ifdef DEBUG_TRACE_EXECUTION
         MSG("STACK UNDERFLOW!");
@@ -705,7 +705,7 @@ Value MecVm::Pop() {
 Value MecVm::PopN(const u32 num) {
 
 #ifdef STACK_BOUNDS_CHECKING
-    if ((m_StackPtr - num) < STACK_LOCALS_START_PTR) [[unlikely]]
+    if ((m_StackPtr - num) < STACK_LOCALS_START_PTR)
         return *STACK_LOCALS_START_PTR;
 #endif
 
@@ -720,8 +720,7 @@ Value MecVm::PopN(const u32 num) {
 Value MecVm::Peek(const u32 pos) {
 
 #ifdef STACK_BOUNDS_CHECKING
-    if ((m_StackPtr - pos) < STACK_LOCALS_START_PTR) [[unlikely]] {
-        //SetStatus(vmStackUnderflow);
+    if ((m_StackPtr - pos) < STACK_LOCALS_START_PTR) {
         return *STACK_LOCALS_START_PTR;
     }
 #endif
@@ -762,7 +761,7 @@ bool MecVm::Call(const funcPtr_t functionId, const int argCount) {
 
     // Sanity check the arg count
     const u8 arity = m_Frame.Ip[-1];
-    if ( argCount != arity) {
+    if (argCount != arity) {
         SetStatus(vmCallArgCountError);
         return false;
     }
@@ -780,7 +779,7 @@ bool MecVm::Call(const funcPtr_t functionId, const int argCount) {
 }
 
 bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
-    NativeFunc nativeFunc = ResolveNativeFunction(nativeId, argCount);
+    const NativeFunc nativeFunc = ResolveNativeFunction(nativeId, argCount);
     if (nativeFunc == nullptr) {
         // Function couldn't be resolved.
         SetStatus(vmNativeFunctionNotResolved);
@@ -794,7 +793,7 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
         args = (m_StackPtr - argCount);
     }
 
-    Value result = nativeFunc(argCount, args);
+    const Value result = nativeFunc(argCount, args);
 
     m_StackPtr -= (argCount + 1);
     Push(result);
@@ -802,7 +801,7 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
     return true;
 }
 
-Value *MecVm::String(const u32 index) {
+Value *MecVm::String(const u32 index) const {
     u32 stringIndex = (index >> 2);
     if (stringIndex > m_Script->Strings.Count) {
         return nullptr;
@@ -811,7 +810,7 @@ Value *MecVm::String(const u32 index) {
     return (strings + stringIndex);
 }
 
-VmStatus MecVm::SetStatus(VmStatus status) {
+VmStatus MecVm::SetStatus(const VmStatus status) {
 
     m_Status = status;
     return m_Status;
@@ -836,7 +835,7 @@ u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stack
     if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || script == nullptr)
         return 0;
 
-    ScriptBinaryHeader *header = (ScriptBinaryHeader *) data;
+    const ScriptBinaryHeader *header = (ScriptBinaryHeader *) data;
 
     // Validate the header
     if (header->HeaderSize != sizeof (ScriptBinaryHeader))

@@ -79,7 +79,7 @@ private:
     void DecrementValue(const VmPointer &pointer, bool push);
     bool Call(funcPtr_t functionId, int argCount);
     bool CallNative(NativeFuncId nativeId, int argCount);
-    Value *String(const u32 index);
+    Value *String(const u32 index) const;
 
     static ResolverFunction FunctionResolver;
     NativeFunc ResolveNativeFunction(NativeFuncId funcId, u8 argCount);
