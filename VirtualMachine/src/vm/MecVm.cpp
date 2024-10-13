@@ -70,6 +70,11 @@ void MecVm::GetLanguageVersion(u8 &major, u8 &minor) {
     minor = LANG_VERSION_MINOR;
 }
 
+VmStatus MecVm::GetStatus() {
+
+    return m_Status;
+}
+
 
 void MecVm::Run(ScriptInfo *script) {
 

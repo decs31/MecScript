@@ -47,6 +47,8 @@ public:
 
     void Reset();
 
+    VmStatus GetStatus();
+
     static void SetNativeFunctionResolver(ResolverFunction resolver);
 
     static void GetLanguageVersion(u8 &major, u8 &minor);
