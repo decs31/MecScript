@@ -1,0 +1,10 @@
+// MVIC Functions Test
+
+int x = 0;
+const uint channelId = 10000;
+
+while(1) {
+    WriteRuntime(channelId, x);
+    x++;
+    Yield(100);
+}

@@ -71,12 +71,11 @@ bool Disassembler::ReadHeader() {
 
     OutputLine("========== MecScript Disassembly ==========");
     OutputLine("    Header Size:       " + STRING(header->HeaderSize) + " bytes");
-    OutputLine("    Header Version:    " + STRING(header->HeaderVersion));
+    OutputLine("    Flags:             " + STRING(header->Flags));
     OutputLine("    Language Version:  " + STRING(header->LangVersionMajor) + "." + STRING(header->LangVersionMinor));
     OutputLine("    Build Day/Time:    " + STRING(header->BuildDay) + ":" + STRING(header->BuildTime));
     OutputLine("    Globals Size:      " + STRING(header->GlobalsSize) + " bytes");
     OutputLine("    Checksum:          " + STRING(header->CheckSum));
-    //OutputLine(divider);
     OutputLine("    ");
 
     return true;

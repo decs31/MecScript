@@ -24,14 +24,27 @@ static std::map<string, NativeFuncInfo> NativeFunctionMap = {
         {"println",  NativeFuncInfo(nfPrintLn, dtVoid, std::vector<DataType>() = {dtString})},
         {"printi", NativeFuncInfo(nfPrintI, dtVoid, std::vector<DataType>() = {dtInt32})},
         {"printf", NativeFuncInfo(nfPrintF, dtVoid, std::vector<DataType>() = {dtFloat})},
-        {"clock",  NativeFuncInfo(nfClock, dtInt32)}
+        {"clock",  NativeFuncInfo(nfClock, dtInt32)},
+        {"Yield", NativeFuncInfo(nfYieldFor, dtVoid, std::vector<DataType>() = {dtUint32})},
+        {"YieldUntil", NativeFuncInfo(nfYieldUntil, dtVoid, std::vector<DataType>() = {dtUint32})},
+        {"ReadRuntime", NativeFuncInfo(nfReadRuntime, dtInt32, std::vector<DataType>() = {dtUint32})},
+        {"ReadRuntimeReal", NativeFuncInfo(nfReadRuntimeReal, dtFloat, std::vector<DataType>() = {dtUint32})},
+        {"WriteRuntime", NativeFuncInfo(nfWriteRuntime, dtVoid, std::vector<DataType>() = {dtUint32, dtInt32})},
+        {"WriteRuntimeReal", NativeFuncInfo(nfWriteRuntimeReal, dtVoid, std::vector<DataType>() = {dtUint32, dtFloat})},
 };
 
-Compiler::Compiler(ErrorHandler *errorHandler, const std::string &script)
+Compiler::Compiler(ErrorHandler *errorHandler, const std::string &script, const u8 flags, const std::string &fileName)
         : MecScriptBase(errorHandler),
           m_Lexer(errorHandler, script),
           m_PreProcessor(errorHandler) {
-    //
+
+    m_Flags = flags;
+
+    // Push the filename into the compiled output if it's given
+    if ((m_Flags & cfEmbeddedFileName) && !fileName.empty()) {
+        m_TopLevelFileName = fileName;
+        AddString(m_TopLevelFileName);
+    }
 }
 
 Compiler::~Compiler() {
@@ -629,10 +642,9 @@ void Compiler::EmitConstant(const ConstantInfo &constant) {
     if (pos <= 0xFF) {
         EmitBytes(OP_CONSTANT, (opCode_t) pos);
     } else if (pos <= 0xFFFF) {
-        //AddWarning("Number of constants exceeds 255.", CurrentToken());
         EmitBytes(OP_CONSTANT_16, mByte0(pos), mByte1(pos));
     } else {
-        //AddWarning("Number of constants exceeds 65535.", CurrentToken());
+        AddWarning("Number of constants exceeds 65535.", CurrentToken());
         EmitBytes(OP_CONSTANT_24, mByte0(pos), mByte1(pos), mByte2(pos));
     }
 }
@@ -646,7 +658,7 @@ u32 Compiler::AddString(const string &str) {
     }
 
     // Add new constant string
-    u32 newIndex = (u32) m_StringData.size();
+    const u32 newIndex = (u32) m_StringData.size();
     StringData newString {
             .Index = newIndex,
             .Length = (uint32_t) str.length(),
@@ -670,8 +682,7 @@ u32 Compiler::AddString(const string &str) {
 }
 
 void Compiler::EmitString(const string &str) {
-
-    u32 pos = AddString(str);
+    const u32 pos = AddString(str);
 
     if (pos > 0xFFFFFF) {
         AddError("Maximum string storage size reached.", CurrentToken());
@@ -2545,8 +2556,7 @@ void Compiler::PointerIndex(bool canAssign) {
 }
 
 NativeFuncInfo *Compiler::ResolveNativeFunction(const string &name) {
-
-    auto nf = NativeFunctionMap.find(name);
+    const auto nf = NativeFunctionMap.find(name);
     if (nf != NativeFunctionMap.end()) {
         // Tag the function name onto the result
         nf->second.Name = name;
@@ -3445,7 +3455,7 @@ while(FILE_POS % 4 > 0) { \
     // Write Header
     ScriptBinaryHeader header{
             .HeaderSize = sizeof(ScriptBinaryHeader),
-            .HeaderVersion = 0,
+            .Flags = m_Flags,
             .LangVersionMajor = LANG_VERSION_MAJOR,
             .LangVersionMinor = LANG_VERSION_MINOR,
             .BuildDay = buildDay,

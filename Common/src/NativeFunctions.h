@@ -14,7 +14,18 @@ enum NativeFuncId : u8 {
     nfPrintLn,
     nfPrintI,
     nfPrintF,
-    nfClock
+    nfClock,
+    nfYieldFor,
+    nfYieldUntil,
+    nfReadRuntime,
+    nfReadRuntimeReal,
+    nfWriteRuntime,
+    nfWriteRuntimeReal,
+    nfReadVariable,
+    nfWriteVariable,
+    nfLookupTable,
+    nfSendCanMessage,
+    nfReadCanMessage,
 };
 
 /* Native Functions */

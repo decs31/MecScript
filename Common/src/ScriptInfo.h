@@ -29,9 +29,14 @@ struct ScriptInfo {
     ValueData Stack;
 };
 
+enum CompilerFlags : u8 {
+    cfEmbeddedFileName = 0x01,
+    cfShortAddressing = 0x02,
+};
+
 struct ScriptBinaryHeader {
     u8 HeaderSize;
-    u8 HeaderVersion;
+    u8 Flags;
     u8 LangVersionMajor;
     u8 LangVersionMinor;
     u16 BuildDay; // Days sine 01/01/2000

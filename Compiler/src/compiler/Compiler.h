@@ -20,7 +20,7 @@
 
 class Compiler : public MecScriptBase {
 public:
-    explicit Compiler(ErrorHandler *errorHandler, const string &script);
+    explicit Compiler(ErrorHandler *errorHandler, const string &script, const u8 flags = 0, const string &fileName = "");
     ~Compiler();
 
     StatusCode Compile();
@@ -39,6 +39,8 @@ public:
 
 private:
     static Compiler *m_Compiler;
+    u8 m_Flags = 0;
+    string m_TopLevelFileName;
     Lexer m_Lexer;
     PreProcessor m_PreProcessor;
     size_t m_CurrentPos = 0;
