@@ -869,7 +869,7 @@ u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stack
     script->Constants.Values = (Value *) (data + header->ConstantsPos);
     script->Constants.Count = ((header->StringsPos - header->ConstantsPos) / sizeof(Value));
     script->Strings.Values = (Value *) (data + header->StringsPos);
-    script->Strings.Count = ((dataSize - header->StringsPos) / sizeof(Value));
+    script->Strings.Count = ((header->TotalSize - header->StringsPos) / sizeof(Value));
     script->Globals.Values = (Value *) stack;
     script->Globals.Count = (header->GlobalsSize / sizeof(Value));
     script->Stack.Values = (Value *) (stack + stackOffset);
