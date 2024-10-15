@@ -13,7 +13,7 @@
 
 #define STACK_SIZE 0x1000
 
-static Value NativePrint(const int argCount, Value *args) {
+static Value NativePrint(void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -25,7 +25,7 @@ static Value NativePrint(const int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintLine(const int argCount, Value *args) {
+static Value NativePrintLine(void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -37,7 +37,7 @@ static Value NativePrintLine(const int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintI(const int argCount, Value *args) {
+static Value NativePrintI(void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -49,7 +49,7 @@ static Value NativePrintI(const int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintF(const int argCount, Value *args) {
+static Value NativePrintF(void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -68,7 +68,7 @@ template<class Duration>
 using TimePoint = std::chrono::time_point<Clock, Duration>;
 static nanos ClockStartTime;
 
-static Value NativeClock(int argCount, Value *args) {
+static Value NativeClock(void *sysParam, int argCount, Value *args) {
 
     const auto now = Clock::now().time_since_epoch() - ClockStartTime;
     long long int ms = now.count() / 1000000;

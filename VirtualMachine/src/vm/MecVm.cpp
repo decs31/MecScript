@@ -76,9 +76,10 @@ VmStatus MecVm::GetStatus() {
 }
 
 
-void MecVm::Run(ScriptInfo *script) {
+void MecVm::Run(ScriptInfo *script, void *sysParam) {
 
     m_Script = script;
+    m_SystemParameter = sysParam;
 
     if (m_Script == nullptr || m_Script->Code.Length == 0) {
         SetStatus(vmNoProgramLoaded);
@@ -798,7 +799,7 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
         args = (m_StackPtr - argCount);
     }
 
-    const Value result = nativeFunc(argCount, args);
+    const Value result = nativeFunc(m_SystemParameter, argCount, args);
 
     m_StackPtr -= (argCount + 1);
     Push(result);
@@ -807,7 +808,7 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
 }
 
 Value *MecVm::String(const u32 index) const {
-    u32 stringIndex = (index >> 2);
+    const u32 stringIndex = (index >> 2);
     if (stringIndex > m_Script->Strings.Count) {
         return nullptr;
     }

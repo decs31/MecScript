@@ -29,7 +29,7 @@ enum NativeFuncId : u8 {
 };
 
 /* Native Functions */
-typedef Value (*NativeFunc)(const int argCount, Value *args);
+typedef Value (*NativeFunc)(void *sysParam, const int argCount, Value *args);
 typedef NativeFunc (*ResolverFunction)(const NativeFuncId funcId, const u8 argCount);
 
 #endif //NATIVEFUNCTIONS_H

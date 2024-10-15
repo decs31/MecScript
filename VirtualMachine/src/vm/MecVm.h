@@ -43,7 +43,7 @@ public:
 
     static u32 DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script);
 
-    void Run(ScriptInfo *script);
+    void Run(ScriptInfo *script, void *sysParam = nullptr);
 
     void Reset();
 
@@ -62,6 +62,7 @@ private:
         Value *Slots;
     };
 
+    void *m_SystemParameter = nullptr;
     Value *m_StackPtr = nullptr;
     Value *m_StackEnd = nullptr;
 
