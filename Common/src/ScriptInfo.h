@@ -27,6 +27,7 @@ struct ScriptInfo {
     ValueData Strings;
     ValueData Globals;
     ValueData Stack;
+    const char *FileName;
 };
 
 enum CompilerFlags : u8 {
