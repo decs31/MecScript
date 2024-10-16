@@ -227,8 +227,9 @@ int fib(int n) {
 int start = clock();
 int fibResult = fib(35);
 int end = clock();
-print("Result = ");
-printi(fibResult);
+printfmt("Result = %.0f", fibResult);
+println(" ");
+//printi(fibResult);
 print("Time (ms): ");
 printi(end - start);
 

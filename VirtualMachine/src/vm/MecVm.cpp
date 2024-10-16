@@ -792,14 +792,9 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
         return false;
     }
 
-    Value *args;
-    if (nativeId == nfPrint || nativeId == nfPrintLn) {
-        args = String((m_StackPtr - argCount)->UInt);
-    } else {
-        args = (m_StackPtr - argCount);
-    }
+    Value *args = (m_StackPtr - argCount);
 
-    const Value result = nativeFunc(m_SystemParameter, argCount, args);
+    const Value result = nativeFunc(m_Script, m_SystemParameter, argCount, args);
 
     m_StackPtr -= (argCount + 1);
     Push(result);
@@ -807,13 +802,13 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
     return true;
 }
 
-Value *MecVm::String(const u32 index) const {
+const char *MecVm::ResolveString(const ScriptInfo *const script, const u32 index) {
     const u32 stringIndex = (index >> 2);
-    if (stringIndex > m_Script->Strings.Count) {
+    if (script == nullptr || stringIndex > script->Strings.Count) {
         return nullptr;
     }
-    Value *strings = m_Script->Strings.Values;
-    return (strings + stringIndex);
+
+    return (const char *)(script->Strings.Values + stringIndex);
 }
 
 VmStatus MecVm::SetStatus(const VmStatus status) {

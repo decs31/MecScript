@@ -21,9 +21,10 @@
 
 static std::map<string, NativeFuncInfo> NativeFunctionMap = {
         {"print",  NativeFuncInfo(nfPrint, dtVoid, std::vector<DataType>() = {dtString})},
-        {"println",  NativeFuncInfo(nfPrintLn, dtVoid, std::vector<DataType>() = {dtString})},
-        {"printi", NativeFuncInfo(nfPrintI, dtVoid, std::vector<DataType>() = {dtInt32})},
-        {"printf", NativeFuncInfo(nfPrintF, dtVoid, std::vector<DataType>() = {dtFloat})},
+        {"println",  NativeFuncInfo(nfPrintLine, dtVoid, std::vector<DataType>() = {dtString})},
+        {"printi", NativeFuncInfo(nfPrintInt, dtVoid, std::vector<DataType>() = {dtInt32})},
+        {"printf", NativeFuncInfo(nfPrintFloat, dtVoid, std::vector<DataType>() = {dtFloat})},
+        {"printfmt", NativeFuncInfo(nfPrintFormat, dtVoid, std::vector<DataType>() = {dtString, dtFloat})},
         {"clock",  NativeFuncInfo(nfClock, dtInt32)},
         {"Yield", NativeFuncInfo(nfYieldFor, dtVoid, std::vector<DataType>() = {dtUint32})},
         {"YieldUntil", NativeFuncInfo(nfYieldUntil, dtVoid, std::vector<DataType>() = {dtUint32})},

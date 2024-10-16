@@ -6,6 +6,7 @@
 #include <winerror.h>
 #include <fstream>
 #include <chrono>
+#include <cstring>
 #include "Options.h"
 #include "VmConfig.h"
 #include "MecVm.h"
@@ -13,31 +14,33 @@
 
 #define STACK_SIZE 0x1000
 
-static Value NativePrint(void *sysParam, const int argCount, Value *args) {
+static Value NativePrint(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
     }
 
-    std::cout << (char *)args;
+    const char *chars = MecVm::ResolveString(script, AS_UINT32(args[0]));
+    std::cout << chars;
 
     return BOOL_VAL(true);
 }
 
-static Value NativePrintLine(void *sysParam, const int argCount, Value *args) {
+static Value NativePrintLine(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
     }
 
-    std::cout << (char *)args << std::endl;
+    const char *chars = MecVm::ResolveString(script, AS_UINT32(args[0]));
+    std::cout << chars << std::endl;
 
     return BOOL_VAL(true);
 }
 
-static Value NativePrintI(void *sysParam, const int argCount, Value *args) {
+static Value NativePrintI(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -49,7 +52,7 @@ static Value NativePrintI(void *sysParam, const int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
-static Value NativePrintF(void *sysParam, const int argCount, Value *args) {
+static Value NativePrintF(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
 
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
@@ -61,6 +64,26 @@ static Value NativePrintF(void *sysParam, const int argCount, Value *args) {
     return BOOL_VAL(true);
 }
 
+static Value NativePrintFormat(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+
+    if (argCount < 2) {
+        MSG("Print Error! Nothing to print.");
+        return BOOL_VAL(false);
+    }
+
+    const char *chars = MecVm::ResolveString(script, AS_UINT32(args[0]));
+    float val = AS_FLOAT(args[1]);
+    char strBuf[256 + 32];
+    if (strlen(chars) > 256) {
+        MSG("Print Error! String too long.");
+        return BOOL_VAL(false);
+    }
+    sprintf(strBuf, chars, val);
+    std::cout << strBuf;
+
+    return BOOL_VAL(true);
+}
+
 using Clock = std::chrono::steady_clock;
 using nanos = std::chrono::nanoseconds;
 using millis = std::chrono::milliseconds;
@@ -68,7 +91,7 @@ template<class Duration>
 using TimePoint = std::chrono::time_point<Clock, Duration>;
 static nanos ClockStartTime;
 
-static Value NativeClock(void *sysParam, int argCount, Value *args) {
+static Value NativeClock(const ScriptInfo *const script, void *sysParam, int argCount, Value *args) {
 
     const auto now = Clock::now().time_since_epoch() - ClockStartTime;
     long long int ms = now.count() / 1000000;
@@ -86,19 +109,24 @@ static NativeFunc ResolveNativeFunction(const NativeFuncId funcId, const u8 argC
             funcArgs = 1;
             break;
 
-        case nfPrintLn:
+        case nfPrintLine:
             func = NativePrintLine;
             funcArgs = 1;
             break;
 
-        case nfPrintI:
+        case nfPrintInt:
             func = NativePrintI;
             funcArgs = 1;
             break;
 
-        case nfPrintF:
+        case nfPrintFloat:
             func = NativePrintF;
             funcArgs = 1;
+            break;
+
+        case nfPrintFormat:
+            func = NativePrintFormat;
+            funcArgs = 2;
             break;
 
         case nfClock:

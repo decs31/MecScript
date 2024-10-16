@@ -60,6 +60,9 @@ enum DataType : u8 {
     dtClass,
     dtCppPointer, // This is problematic with 64bit/32bit discrepancies
     dtString,
+
+    // User
+    dtUserStruct,
 };
 
 enum VarScopeType : uint8_t {
@@ -100,8 +103,8 @@ union Value {
     int16_t Shorts[2];
     uint16_t UShort;
     uint16_t UShorts[2];
-    int32_t Int = 0;
-    uint32_t UInt;
+    int32_t Int;
+    uint32_t UInt = 0;
     float Float;
     VmPointer Pointer;
     funcPtr_t FuncPointer;

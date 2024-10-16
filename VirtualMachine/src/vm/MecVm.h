@@ -53,6 +53,8 @@ public:
 
     static void GetLanguageVersion(u8 &major, u8 &minor);
 
+    static const char *ResolveString(const ScriptInfo *const script, const u32 index);
+
 private:
     VmStatus m_Status = vmOk;
 
@@ -82,7 +84,6 @@ private:
     void DecrementValue(const VmPointer &pointer, bool push);
     bool Call(funcPtr_t functionId, int argCount);
     bool CallNative(NativeFuncId nativeId, int argCount);
-    Value *String(const u32 index) const;
 
     static ResolverFunction FunctionResolver;
     NativeFunc ResolveNativeFunction(NativeFuncId funcId, u8 argCount);
