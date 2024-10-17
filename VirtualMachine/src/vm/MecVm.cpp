@@ -90,7 +90,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
 
     Reset();
 
-    for (;;) {
+    while (m_Status == vmOk) {
         DISASSEMBLE_INSTRUCTION(m_Script->Code.Data, m_Frame.Ip);
         opCode_t instruction = READ_BYTE();
 
@@ -644,6 +644,11 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
         }
     }
 }
+
+void MecVm::Stop() {
+    m_Status = vmStop;
+}
+
 
 void MecVm::Push(const Value &data) {
 

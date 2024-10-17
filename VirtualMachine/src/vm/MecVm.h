@@ -19,6 +19,7 @@
 
 enum VmStatus {
     vmOk = 0,
+    vmStop,
     vmEnd,
 
     // Errors
@@ -44,6 +45,7 @@ public:
     static u32 DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script);
 
     void Run(ScriptInfo *script, void *sysParam = nullptr);
+    void Stop();
 
     void Reset();
 
@@ -56,7 +58,7 @@ public:
     static const char *ResolveString(const ScriptInfo *const script, const u32 index);
 
 private:
-    VmStatus m_Status = vmOk;
+    volatile VmStatus m_Status = vmOk;
 
     struct CallFrame {
         CallFrame *Enclosing;

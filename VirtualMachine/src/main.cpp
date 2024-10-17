@@ -7,6 +7,8 @@
 #include <fstream>
 #include <chrono>
 #include <cstring>
+#include <thread>
+
 #include "Options.h"
 #include "VmConfig.h"
 #include "MecVm.h"
@@ -79,7 +81,7 @@ static Value NativePrintFormat(const ScriptInfo *const script, void *sysParam, c
         return BOOL_VAL(false);
     }
     sprintf(strBuf, chars, val);
-    std::cout << strBuf;
+    std::cout << strBuf << std::endl;
 
     return BOOL_VAL(true);
 }
@@ -91,55 +93,99 @@ template<class Duration>
 using TimePoint = std::chrono::time_point<Clock, Duration>;
 static nanos ClockStartTime;
 
-static Value NativeClock(const ScriptInfo *const script, void *sysParam, int argCount, Value *args) {
-
+static long long int Millis() {
     const auto now = Clock::now().time_since_epoch() - ClockStartTime;
-    long long int ms = now.count() / 1000000;
+    const long long int ms = now.count() / 1000000;
+    return ms;
+}
+
+static Value NativeClock(const ScriptInfo *const script, void *sysParam, int argCount, Value *args) {
+    const auto ms = Millis();
     return INT32_VAL((int) ms);
+}
+
+static Value NativeYield(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+    if (argCount < 1) {
+        MSG("Yield Error! No time given.");
+    }
+
+    long long int delay = AS_UINT32(args[0]);
+
+    MSG("Yield(" << delay << ")");
+
+    auto start = Millis();
+    while (Millis() < (start + delay)) {
+        // spin...
+    }
+
+    return BOOL_VAL(true);
+}
+
+static Value NativeYieldUntil(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+    if (argCount < 2) {
+        MSG("Yield Error! No time given.");
+    }
+
+    long long int lastTime = AS_UINT32(args[0]);
+    long long int delay = AS_UINT32(args[1]);
+
+    MSG("Yield(" << delay << ")");
+
+    auto end = lastTime + delay;
+    while (Millis() < end) {
+        // spin...
+    }
+    lastTime += delay;
+
+    return UINT32_VAL(lastTime);
+}
+
+static Value NativeDummy(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+    MSG("Native Function not defined");
+    return BOOL_VAL(false);
 }
 
 static NativeFunc ResolveNativeFunction(const NativeFuncId funcId, const u8 argCount) {
 
     NativeFunc func = nullptr;
-    u8 funcArgs = 0;
 
     switch (funcId) {
         case nfPrint:
             func = NativePrint;
-            funcArgs = 1;
             break;
 
         case nfPrintLine:
             func = NativePrintLine;
-            funcArgs = 1;
             break;
 
         case nfPrintInt:
             func = NativePrintI;
-            funcArgs = 1;
             break;
 
         case nfPrintFloat:
             func = NativePrintF;
-            funcArgs = 1;
             break;
 
         case nfPrintFormat:
             func = NativePrintFormat;
-            funcArgs = 2;
             break;
 
         case nfClock:
             func = NativeClock;
-            funcArgs = 0;
+            break;
+
+        case nfYieldFor:
+            func = NativeYield;
+            break;
+
+        case nfYieldUntil:
+            func = NativeYieldUntil;
             break;
 
         default:
+            func = NativeDummy;
             break;
     }
-
-    if (argCount != funcArgs)
-        func = nullptr;
 
     return func;
 }

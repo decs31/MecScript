@@ -1,9 +1,14 @@
 // MVIC Functions Test
 
 int x = 0;
-const uint channelId = 10000;
+const uint IdUserChannel1 = 10000;
+const uint IdUserChannel2 = 10001;
+const uint IdBattVolts = 30;
 
 for(;;) {
-    WriteRuntime(channelId, x++);
+    WriteRuntime(IdUserChannel1, x++);
+    float volts = ReadRuntimeReal(IdBattVolts) * 0.5;
+    WriteRuntimeReal(IdUserChannel2, volts);
+    printfmt("x = %.0f", x);
     Yield(100);
 }
