@@ -35,6 +35,7 @@ MecScript is designed to be used in small embedded systems such as microcontroll
  - Includes a decompiler for reading the byte code.
 
 ## Virtual Machine Features
+ - Stack based VM.
  - Simple class based implementation.
  - No external dependencies.
  - Stack size and location is controlled by the application writer.
