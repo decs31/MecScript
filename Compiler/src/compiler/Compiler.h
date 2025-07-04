@@ -6,7 +6,6 @@
 #define COMPILER_H_
 
 #include "CompilerData.h"
-#include <bits/shared_ptr.h>
 #include "MecScriptBase.h"
 #include "ErrorHandler.h"
 #include "Lexer.h"
