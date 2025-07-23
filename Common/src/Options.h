@@ -5,10 +5,10 @@
 #ifndef OPTIONS_H_
 #define OPTIONS_H_
 
-#define COMPILER_NAME           "MecCompile.exe"
-#define SCRIPT_EXTENSION        "mec"
-#define OUTPUT_EXTENSION        "mbin"
+#define COMPILER_NAME    "MecCompile.exe"
+#define SCRIPT_EXTENSION "mec"
+#define OUTPUT_EXTENSION "mbin"
 
-#define VERBOSE_OUTPUT
+#define VERBOSE_OUTPUT   (1)
 
-#endif //OPTIONS_H_
+#endif // OPTIONS_H_

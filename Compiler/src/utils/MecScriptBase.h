@@ -7,18 +7,15 @@
 
 #include "ErrorHandler.h"
 
-using string = std::string;
-
-class MecScriptBase {
-public:
+class MecScriptBase
+{
+  public:
     MecScriptBase(ErrorHandler *errorhandler);
 
-protected:
+  protected:
     ErrorHandler *m_ErrorHandler;
     StatusCode m_Status = stsOk;
-    string m_Message;
-
+    std::string m_Message;
 };
 
-
-#endif //COMPILERBASE_H
+#endif // COMPILERBASE_H

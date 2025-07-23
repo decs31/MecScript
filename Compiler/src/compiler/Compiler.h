@@ -5,21 +5,26 @@
 #ifndef COMPILER_H_
 #define COMPILER_H_
 
+#include "../preprocessor/PreProcessor.h"
+#include "Class.h"
+#include "CompilerBase.h"
 #include "CompilerData.h"
-#include "MecScriptBase.h"
 #include "ErrorHandler.h"
+#include "Function.h"
 #include "Lexer.h"
+#include "Native.h"
 #include "Rules.h"
 #include "TypeSystem.h"
-#include "Function.h"
 #include "Variable.h"
-#include "Class.h"
-#include "../preprocessor/PreProcessor.h"
 
-
-class Compiler : public MecScriptBase {
-public:
-    explicit Compiler(ErrorHandler *errorHandler, const string &script, const u8 flags = 0, const string &fileName = "");
+class Compiler : public CompilerBase
+{
+  public:
+    explicit Compiler(ErrorHandler *errorHandler,
+                      NativeFunctionParser *nativeFuncs,
+                      const std::string &script,
+                      const u8 flags              = 0,
+                      const std::string &fileName = "");
     ~Compiler();
 
     StatusCode Compile();
@@ -29,62 +34,30 @@ public:
     uint32_t StringsSizeInBytes();
     uint32_t GlobalsSizeInBytes();
 
-    StatusCode WriteBinaryFile(const string &filePath);
+    StatusCode WriteBinaryFile(const std::string &filePath);
 
     StatusCode Result();
-    string Message();
+    std::string Message();
 
-    static string DataTypeToString(DataType dataType);
+    static std::string DataTypeToString(DataType dataType);
 
-private:
+  private:
     static Compiler *m_Compiler;
+    NativeFunctionParser *m_NativeFuncs;
     u8 m_Flags = 0;
-    string m_TopLevelFileName;
-    Lexer m_Lexer;
+    std::string m_TopLevelFileName;
     PreProcessor m_PreProcessor;
-    size_t m_CurrentPos = 0;
     StatusCode m_Result = stsOk;
-    Token m_TokenCurrent = {};
-    Token m_TokenPrev = {};
 
     std::vector<ConstantInfo> m_ConstValues;
 
-    /* Tokens */
-    bool Expect(const Token &token, TokenType expect, int errorOffset = -2, const string &errorMsg = "");
-
-    bool Check(TokenType tokenType);
-    bool CheckAhead(TokenType tokenType, int num = 1);
-    bool CheckNativeFunction(const Token &token);
     bool CheckFunction(const Token &token);
     bool CheckMethod(const Token &token, VariableInfo *parentVar);
-
-    bool Match(TokenType tokenType);
-
-
-    bool IsSkippable(const Token &token);
-
-    /* Get the Token at the current position */
-    Token CurrentToken();
-
-    /* Get the Token at the current position then advance the position */
-    Token ConsumeToken(TokenType expect = tknNone, int errorOffset = -2, const string &errorMsg = "");
-
-    /* Get the Token at the current position then advance the position */
-    void AdvanceToken(TokenType expect = tknNone, int errorOffset = -2, const string &error = "");
-
-    /* Get the Token at the specified position */
-    Token TokenAt(size_t pos);
-
-    /* Get the Token at a number of positions ahead of the current position */
-    Token LookAhead(int num = 1);
-
-    Token LookBack(int num = 1);
-
-    bool IsAtEnd();
+    bool CheckNativeFunction(const Token &token);
 
     /* Classes */
     ClassInfo *m_CurrentClass = nullptr;
-    ClassInfo *CreateClass(const string &name);
+    ClassInfo *CreateClass(const std::string &name);
     void EndClass();
     std::vector<ClassInfo *> m_Classes;
     ClassInfo *CurrentClass();
@@ -97,12 +70,12 @@ private:
     /* Functions */
     std::vector<ScriptFunction *> m_Functions;
     ScriptFunction *m_CurrentFunction = nullptr;
-    ScriptFunction *CreateFunction(const string &name, FunctionType type, DataType returnType);
+    ScriptFunction *CreateFunction(const std::string &name, FunctionType type, DataType returnType);
     ScriptFunction *CurrentFunction();
     ScriptFunction *FindFunctionById(int chunkId);
-    FunctionInfo *FindFunction(const string &name);
-    ScriptFunction *FindScriptFunction(const string &name);
-    ScriptFunction *ResolveMethod(const string &name, VariableInfo *parentVar);
+    FunctionInfo *FindFunction(const std::string &name);
+    ScriptFunction *FindScriptFunction(const std::string &name);
+    ScriptFunction *ResolveMethod(const std::string &name, VariableInfo *parentVar);
     int EndFunction();
     void ConditionalBegin();
     void ConditionalEnd();
@@ -114,35 +87,34 @@ private:
     /* Variables */
     std::vector<VariableInfo *> m_SharedGlobals;
     std::vector<VariableInfo *> m_Globals;
-    int m_ScopeDepth = 0;
-    u32 m_LocalsMax = 0;
+    int m_ScopeDepth             = 0;
+    u32 m_LocalsMax              = 0;
     VariableInfo *m_CurrentArray = nullptr;
     VarScopeType CurrentScope() const;
 
-    VariableInfo *CreateVariable(const string &name, VarScopeType scope, DataType dataType, u32 flags);
+    VariableInfo *CreateVariable(const std::string &name, VarScopeType scope, DataType dataType, u32 flags);
 
     TypeInfo *m_CurrentType = nullptr;
     DataType TypeBegin(TypeInfo *typeInfo);
     DataType TypeSetCurrent(DataType type, bool force = false);
     DataType CurrentType();
-    TypeCompatibility TypeCheck(DataType type, const string &errorMessage = "");
+    TypeCompatibility TypeCheck(DataType type, const std::string &errorMessage = "");
     DataType TypeEnd();
 
     VariableInfo *AddGlobal(const Token &token, DataType dataType, u32 flags);
     VariableInfo *AddLocal(const Token &token, DataType dataType, u32 flags);
     VariableInfo *AddMember(const Token &token, DataType dataType, u32 flags);
-    VariableInfo *AddClassMembers(VarScopeType scope, const string &className, const string &instanceName);
-    ClassInfo *ResolveClass(const string &name);
-    VariableInfo *ResolveGlobal(const string &name, const string &parent = "");
-    VariableInfo *ResolveLocal(const string &name, const string &parent = "");
-    VariableInfo *ResolveMember(ClassInfo *parentClass, const string &name);
-    VariableInfo *ResolveVariable(const string &name, const string &parentInstance = "");
+    VariableInfo *AddClassMembers(VarScopeType scope, const std::string &className, const std::string &instanceName);
+    ClassInfo *ResolveClass(const std::string &name);
+    VariableInfo *ResolveGlobal(const std::string &name, const std::string &parent = "");
+    VariableInfo *ResolveLocal(const std::string &name, const std::string &parent = "");
+    VariableInfo *ResolveMember(ClassInfo *parentClass, const std::string &name);
+    VariableInfo *ResolveVariable(const std::string &name, const std::string &parentInstance = "");
     void Destroy(VariableInfo *variable);
     u32 AddConstant(const ConstantInfo &constant);
-    u32 AddString(const string &str);
+    u32 AddString(const std::string &str);
     bool MatchClassInstance();
-    bool MatchTypeDeclaration(DataType &outDataType, u32 &outFlags);
-    VariableInfo *ParseVariable(DataType dataType, u32 flags, const string &errorMessage = "");
+    VariableInfo *ParseVariable(DataType dataType, u32 flags, const std::string &errorMessage = "");
     void NamedVariable(const Token &token, bool canAssign);
     void NamedFunction(const Token &token);
     void NamedMethod(const Token &token, VariableInfo *parentVar);
@@ -207,7 +179,6 @@ private:
     void SwitchBody();
     void SwitchEnd();
 
-
     /* Loops */
     LoopInfo *m_CurrentLoop = nullptr;
     void LoopBegin(LoopInfo *loop);
@@ -216,9 +187,9 @@ private:
     void LoopEnd();
 
     /* Functions */
-    NativeFuncInfo *ResolveNativeFunction(const string &name);
-    ScriptFunction *Function(const string &name, FunctionType chunkType, DataType returnType);
-    bool PatchFunctionOffset(const string &name, funcPtr_t functionId, u32 offset);
+    NativeFuncInfo *ResolveNativeFunction(const std::string &name);
+    ScriptFunction *Function(const std::string &name, FunctionType chunkType, DataType returnType);
+    bool PatchFunctionOffset(const std::string &name, funcPtr_t functionId, u32 offset);
     void NativeFunction(const Token &token);
 
     /* Byte Code Output */
@@ -249,7 +220,7 @@ private:
     void EmitGreaterThan(DataType type);
     void EmitGreaterThanOrEqual(DataType type);
     int EmitArray();
-    void EmitString(const string &str);
+    void EmitString(const std::string &str);
     void PatchArray(int offset, int size);
     int EmitJump(opCode_t jumpOp);
     void PatchJump(int offset);
@@ -268,20 +239,11 @@ private:
     u32 CalculateChecksum(const u8 *data, u32 length);
     static void GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds);
 
-    /* Error Handling */
-    bool m_PanicMode = false;
-    void AddError(string errMsg, const Token &token);
-    void AddError(string errMsg, size_t lineNum, size_t linePos);
-    void AddWarning(string warningMsg, const Token &token);
-    void AddWarning(string waringMsg, size_t lineNum, size_t linePos);
-    void Synchronize();
-
     /* Result */
-    StatusCode SetResult(StatusCode result, string message = "");
+    StatusCode SetResult(StatusCode result, std::string message = "");
 
     /* Cleanup */
     void Cleanup();
 };
 
-
-#endif //COMPILER_H_
+#endif // COMPILER_H_

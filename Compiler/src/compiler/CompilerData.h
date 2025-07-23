@@ -5,21 +5,17 @@
 #ifndef COMPILERDATA_H_
 #define COMPILERDATA_H_
 
-#include "Value.h"
 #include "Instructions.h"
-#include <vector>
+#include "Value.h"
 #include <string>
-
-using string = std::string;
-
+#include <vector>
 
 
 struct StringData {
     uint32_t Index;
     uint32_t Length;
-    string String;
+    std::string String;
 };
-
 
 struct SwitchInfo {
     // Data type of the input expression
@@ -57,4 +53,4 @@ struct LoopInfo {
     LoopInfo *Enclosing = nullptr;
 };
 
-#endif //COMPILERDATA_H_
+#endif // COMPILERDATA_H_

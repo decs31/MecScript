@@ -1,0 +1,35 @@
+// Print
+[native 1] void print(string str);
+
+// Print Line
+[native 2] void println(string str);
+
+// Print Integer
+[native 3] void print(int i);
+
+// Print Float
+[native 4] void print(float f);
+
+// Print Format
+[native 5] void print(string str, float f);
+
+// Clock
+[native 6] int clock();
+
+// Yield For
+[native 7] void yield(uint t);
+
+// Yield Until
+[native 8] void yieldUntil(uint t);
+
+// Read Runtime
+[native 9] int ReadRuntime(uint id);
+
+// Read Runtime Real
+[native 10] float ReadRuntimeReal(uint id);
+
+// Write Runtime
+[native 11] void WriteRuntime(uint id, int val);
+
+// Write Runtime Real
+[native 12] void WriteRuntimeReal(uint id, float val);

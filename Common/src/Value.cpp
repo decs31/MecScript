@@ -4,17 +4,18 @@
 
 #include "Value.h"
 
-VmPointer::VmPointer()
-: Address(0), Type(dtNone), Scope(scopeStackAbsolute) {
+VmPointer::VmPointer() : Address(0), Type(dtNone), Scope(scopeStackAbsolute)
+{
     // Default
 }
 
-VmPointer::VmPointer(u16 address, DataType type, VarScopeType scope)
-: Address(address), Type(type), Scope(scope) {
+VmPointer::VmPointer(u16 address, DataType type, VarScopeType scope) : Address(address), Type(type), Scope(scope)
+{
     //
 }
 
-VmPointer VmPointer::Null() {
+VmPointer VmPointer::Null()
+{
 
     return {};
 }

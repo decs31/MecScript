@@ -8,8 +8,8 @@
 #include "Instructions.h"
 #include "Value.h"
 
-#define LANG_VERSION_MAJOR      0
-#define LANG_VERSION_MINOR      1
+#define LANG_VERSION_MAJOR 0
+#define LANG_VERSION_MINOR 1
 
 struct CodeData {
     opCode_t *Data;
@@ -40,14 +40,14 @@ struct ScriptBinaryHeader {
     u8 Flags;
     u8 LangVersionMajor;
     u8 LangVersionMinor;
-    u16 BuildDay; // Days sine 01/01/2000
-    u16 BuildTime; // Seconds since midnight / 2
-    u32 CodePos; // Bytes
+    u16 BuildDay;     // Days sine 01/01/2000
+    u16 BuildTime;    // Seconds since midnight / 2
+    u32 CodePos;      // Bytes
     u32 ConstantsPos; // Bytes
-    u32 StringsPos; // Bytes
-    u32 GlobalsSize; // Bytes
-    u32 TotalSize; // Bytes
-    u32 CheckSum; // XOR byte code
+    u32 StringsPos;   // Bytes
+    u32 GlobalsSize;  // Bytes
+    u32 TotalSize;    // Bytes
+    u32 CheckSum;     // XOR byte code
 };
 
-#endif //SCRIPTINFO_H
+#endif // SCRIPTINFO_H

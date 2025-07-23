@@ -131,10 +131,9 @@ enum OpCode : opCode_t {
     OP_CALL_NATIVE,
     OP_RETURN,
 
-
     // Reserved
     OP_FUNCTION_START = 254,
     OP_END = 255
 };
 
-#endif //INSTRUCTIONS_H
+#endif // INSTRUCTIONS_H

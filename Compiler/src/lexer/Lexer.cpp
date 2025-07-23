@@ -1,117 +1,115 @@
 #include "Lexer.h"
-#include <iostream>
-#include <utility>
-#include <map>
-#include "ScriptUtils.h"
 #include "Console.h"
+#include "ScriptUtils.h"
+#include <iostream>
+#include <map>
+#include <utility>
 
-static std::map<string, TokenType> TokenMap = {
-        {"",         tknNone},
+static std::map<std::string, TokenType> TokenMap = {
+    {         "",               tknNone },
 
-        // Braces
-        {"'",        tknSingleQuote},
-        {"\"",       tknDoubleQuote},
-        {"(",        tknLeftParen},
-        {")",        tknRightParen},
-        {"{",        tknLeftCurly},
-        {"}",        tknRightCurly},
-        {"[",        tknLeftSquareBracket},
-        {"]",        tknRightSquareBracket},
+    // Braces
+    {        "'",        tknSingleQuote },
+    {       "\"",        tknDoubleQuote },
+    {        "(",          tknLeftParen },
+    {        ")",         tknRightParen },
+    {        "{",          tknLeftCurly },
+    {        "}",         tknRightCurly },
+    {        "[",  tknLeftSquareBracket },
+    {        "]", tknRightSquareBracket },
 
-        // Punctuation
-        {",",        tknComma},
-        {".",        tknDot},
-        {";",        tknSemiColon},
-        {":",        tknColon},
-        {"?",        tknQuestionMark},
-        {"::",       tknColonColon},
+    // Punctuation
+    {        ",",              tknComma },
+    {        ".",                tknDot },
+    {        ";",          tknSemiColon },
+    {        ":",              tknColon },
+    {        "?",       tknQuestionMark },
+    {       "::",         tknColonColon },
 
-        // Operators
-        {"=",        tknAssign},
-        {"-",        tknMinus},
-        {"!",        tknExclamation},
-        {"+",        tknPlus},
-        {"*",        tknStar},
-        {"/",        tknSlash},
-        {"%",        tknPercent},
-        {"<",        tknLessThan},
-        {">",        tknGreaterThan},
-        {"&",        tknBitwiseAnd},
-        {"|",        tknBitwiseOr},
-        {"^",        tknBitwiseXor},
-        {"~",        tknBitwiseNot},
-        {"<<",       tknShiftLeft},
-        {">>",       tknShiftRight},
-        {"==",       tknEquals},
-        {"!=",       tknNotEqual},
-        {"<=",       tknLessEqual},
-        {">=",       tknGreaterEqual},
-        {"&&",       tknAnd},
-        {"||",       tknOr},
-        {"+=",       tknPlusEquals},
-        {"-=",       tknMinusEquals},
-        {"*=",       tknTimesEquals},
-        {"/=",       tknDivideEquals},
-        {"&=",       tknBitwiseAndEquals},
-        {"|=",       tknBitwiseOrEquals},
-        {"^=",       tknBitwiseXorEquals},
-        {"++",       tknPlusPlus},
-        {"--",       tknMinusMinus},
-        {"->",       tknArrow},
+    // Operators
+    {        "=",             tknAssign },
+    {        "-",              tknMinus },
+    {        "!",        tknExclamation },
+    {        "+",               tknPlus },
+    {        "*",               tknStar },
+    {        "/",              tknSlash },
+    {        "%",            tknPercent },
+    {        "<",           tknLessThan },
+    {        ">",        tknGreaterThan },
+    {        "&",         tknBitwiseAnd },
+    {        "|",          tknBitwiseOr },
+    {        "^",         tknBitwiseXor },
+    {        "~",         tknBitwiseNot },
+    {       "<<",          tknShiftLeft },
+    {       ">>",         tknShiftRight },
+    {       "==",             tknEquals },
+    {       "!=",           tknNotEqual },
+    {       "<=",          tknLessEqual },
+    {       ">=",       tknGreaterEqual },
+    {       "&&",                tknAnd },
+    {       "||",                 tknOr },
+    {       "+=",         tknPlusEquals },
+    {       "-=",        tknMinusEquals },
+    {       "*=",        tknTimesEquals },
+    {       "/=",       tknDivideEquals },
+    {       "&=",   tknBitwiseAndEquals },
+    {       "|=",    tknBitwiseOrEquals },
+    {       "^=",   tknBitwiseXorEquals },
+    {       "++",           tknPlusPlus },
+    {       "--",         tknMinusMinus },
+    {       "->",              tknArrow },
 
-        // Types
-        {"void",     tknVoid},
-        {"bool",     tknBool},
-        {"char",     tknChar},
-        {"byte",     tknByte},
-        {"short",    tknShort},
-        {"ushort",   tknUShort},
-        {"int",      tknInt},
-        {"uint",     tknUInt},
-        {"float",    tknFloat},
-        {"string",   tknString},
+    // Types
+    {     "void",               tknVoid },
+    {     "bool",               tknBool },
+    {     "char",               tknChar },
+    {     "byte",               tknByte },
+    {    "short",              tknShort },
+    {   "ushort",             tknUShort },
+    {      "int",                tknInt },
+    {     "uint",               tknUInt },
+    {    "float",              tknFloat },
+    {   "string",             tknString },
 
-        // Keywords
-        {"null",     tknNull},
-        {"NULL",     tknNull},
-        {"nil",      tknNull},
-        {"const",    tknConst},
-        {"false",    tknFalse},
-        {"true",     tknTrue},
-        {"class",    tknClass},
-        {"this",     tknThis},
-        {"base",     tknBase},
-        {"if",       tknIf},
-        {"else",     tknElse},
-        {"while",    tknWhile},
-        {"for",      tknFor},
-        {"return",   tknReturn},
-        {"break",    tknBreak},
-        {"continue", tknContinue},
-        {"switch",   tknSwitch},
-        {"case",     tknCase},
-        {"default",  tknDefault},
+    // Keywords
+    {     "null",               tknNull },
+    {     "NULL",               tknNull },
+    {      "nil",               tknNull },
+    {    "const",              tknConst },
+    {    "false",              tknFalse },
+    {     "true",               tknTrue },
+    {    "class",              tknClass },
+    {     "this",               tknThis },
+    {     "base",               tknBase },
+    {       "if",                 tknIf },
+    {     "else",               tknElse },
+    {    "while",              tknWhile },
+    {      "for",                tknFor },
+    {   "return",             tknReturn },
+    {    "break",              tknBreak },
+    { "continue",           tknContinue },
+    {   "switch",             tknSwitch },
+    {     "case",               tknCase },
+    {  "default",            tknDefault },
 };
 
-Lexer::Lexer(ErrorHandler *errorHandler, const string &script)
-        : MecScriptBase(errorHandler) {
-
+Lexer::Lexer(ErrorHandler *errorHandler, const std::string &script) : MecScriptBase(errorHandler)
+{
     m_Script = script;
     if (m_Script.empty()) {
         AddError("Script is empty.");
     }
 }
 
-Lexer::~Lexer()
-= default;
+Lexer::~Lexer() = default;
 
-size_t Lexer::ScriptLength() const {
-
+size_t Lexer::ScriptLength() const
+{
     return m_Script.length();
 }
 
-StatusCode Lexer::Tokenize() {
-
+StatusCode Lexer::Tokenize()
+{
     if (ErrorHandler::IsError(m_Status)) {
         return m_Status;
     }
@@ -124,18 +122,17 @@ StatusCode Lexer::Tokenize() {
     }
 
     if (m_ErrorHandler->ErrorCount() == 0)
-        return SetResult(stsLexEndOfFile,
-                         std::to_string(m_Tokens.size()) + " Tokens");
+        return SetResult(stsLexEndOfFile, std::to_string(m_Tokens.size()) + " Tokens");
     else
-        return SetResult(wrnLexEndOfFileWithErrors,
-                         std::to_string(m_ErrorHandler->ErrorCount()) + " Errors");
+        return SetResult(wrnLexEndOfFileWithErrors, std::to_string(m_ErrorHandler->ErrorCount()) + " Errors");
 }
 
-StatusCode Lexer::ProcessNextToken() {
+StatusCode Lexer::ProcessNextToken()
+{
     // Create Token
     Token token;
-    token.Position = {LineNum(), LinePos()};
-    size_t i = 0;
+    token.Position = { LineNum(), LinePos() };
+    size_t i       = 0;
 
     // Read the first char
     char c;
@@ -145,14 +142,14 @@ StatusCode Lexer::ProcessNextToken() {
     // End of file
     if (m_Pos > m_Script.length()) {
         token.TokenType = tknEndOfFile;
-        token.Value = "END_FILE";
+        token.Value     = "END_FILE";
     }
 
-        // Comment
+    // Comment
     else if (c == '/' && (p == '/' || p == '*')) {
         token.TokenType = tknComment;
         token.Value += c;
-        string esc = p == '*' ? "*/" : "\n";
+        std::string esc = p == '*' ? "*/" : "\n";
         while (!token.Value.ends_with(esc)) {
             if (!GetNextChars(c, p)) {
                 AddError("Comment end not reached. Possibly missing '*/' token.");
@@ -202,7 +199,7 @@ StatusCode Lexer::ProcessNextToken() {
         } while (c != '\"');
     }
 
-        // Identifier
+    // Identifier
     else if (IsIdentifier(c, i)) {
         token.TokenType = tknIdentifier;
         token.Value += c;
@@ -213,7 +210,7 @@ StatusCode Lexer::ProcessNextToken() {
         }
     }
 
-        // Operator
+    // Operator
     else if (IsOperator(c)) {
         token.TokenType = tknOperator;
         token.Value += c;
@@ -224,7 +221,7 @@ StatusCode Lexer::ProcessNextToken() {
         }
     }
 
-        // Number
+    // Number
     else if (IsNumber(c, i)) {
         bool isFloat = false;
         token.Value += c;
@@ -245,22 +242,22 @@ StatusCode Lexer::ProcessNextToken() {
         token.TokenType = isFloat ? tknFloatLiteral : tknIntegerLiteral;
     }
 
-        // Block
+    // Block
     else if (IsBlock(c)) {
         token.TokenType = tknBlock;
         token.Value += c;
     }
 
-        // End ;
+    // End ;
     else if (IsSemiColon(c)) {
         token.Value += c;
         token.TokenType = tknSemiColon;
     }
 
-        // End Line
+    // End Line
     else if (IsEndLine(c)) {
         token.TokenType = tknEndLine;
-        token.Value = "END_LINE";
+        token.Value     = "END_LINE";
         m_LineNum++;
         m_LineStart = m_Pos;
     }
@@ -277,11 +274,9 @@ StatusCode Lexer::ProcessNextToken() {
 
         m_Tokens.push_back(token);
 
-        MSG_V("["
-              + std::to_string(token.Position.LineNum)
-              + ":" + std::to_string(token.Position.LinePos)
-              + "]Token<" + std::to_string(token.TokenType)
-              + ">: \"" << token.Value << "\"");
+        MSG_V(
+            "[" + std::to_string(token.Position.LineNum) + ":" + std::to_string(token.Position.LinePos) + "]Token<" + std::to_string(token.TokenType) + ">: \""
+            << token.Value << "\"");
 
         if (token.TokenType == tknEndOfFile)
             return SetResult(stsLexEndOfFile, "End of file reached.");
@@ -290,16 +285,16 @@ StatusCode Lexer::ProcessNextToken() {
     return stsOk;
 }
 
-Token Lexer::CurrentToken() const {
-
+Token Lexer::CurrentToken() const
+{
     if (m_Tokens.empty())
         return {};
 
     return m_Tokens.back();
 }
 
-bool Lexer::GetNextChars(char &c, char &peek) {
-
+bool Lexer::GetNextChars(char &c, char &peek)
+{
     if (m_Pos < m_Script.length()) {
         c = m_Script.at(m_Pos);
     } else {
@@ -318,9 +313,9 @@ bool Lexer::GetNextChars(char &c, char &peek) {
     return true;
 }
 
-bool Lexer::IsIdentifier(char c, size_t tokenPos) {
-
-#ifdef USE_SWITCH_RANGES
+bool Lexer::IsIdentifier(char c, size_t tokenPos)
+{
+#if (USE_SWITCH_RANGES == 1)
     // Doesn't work with MSVC
     switch (c) {
         case 'a' ... 'z':
@@ -339,6 +334,8 @@ bool Lexer::IsIdentifier(char c, size_t tokenPos) {
         return true;
     if (c >= 'A' && c <= 'Z')
         return true;
+    if (c == '_')
+        return true;
     if (c >= '0' && c <= '9')
         return (tokenPos > 0);
 
@@ -346,8 +343,8 @@ bool Lexer::IsIdentifier(char c, size_t tokenPos) {
 #endif
 }
 
-bool Lexer::IsOperator(char c) {
-
+bool Lexer::IsOperator(char c)
+{
     switch (c) {
         case '+':
         case '-':
@@ -374,8 +371,8 @@ bool Lexer::IsOperator(char c) {
     }
 }
 
-bool Lexer::IsNumber(char c, size_t tokenPos) {
-
+bool Lexer::IsNumber(char c, size_t tokenPos)
+{
     switch (c) {
         case '0':
         case '1':
@@ -419,8 +416,8 @@ bool Lexer::IsNumber(char c, size_t tokenPos) {
     }
 }
 
-bool Lexer::IsBlock(char c) {
-
+bool Lexer::IsBlock(char c)
+{
     switch (c) {
         case '(':
         case ')':
@@ -439,8 +436,8 @@ bool Lexer::IsBlock(char c) {
     }
 }
 
-bool Lexer::IsSemiColon(char c) {
-
+bool Lexer::IsSemiColon(char c)
+{
     switch (c) {
         case ';':
             return true;
@@ -450,8 +447,8 @@ bool Lexer::IsSemiColon(char c) {
     }
 }
 
-bool Lexer::IsEndLine(char c) {
-
+bool Lexer::IsEndLine(char c)
+{
     switch (c) {
         case '\n':
         case '\r':
@@ -462,8 +459,8 @@ bool Lexer::IsEndLine(char c) {
     }
 }
 
-bool Lexer::IsSpace(char c) {
-
+bool Lexer::IsSpace(char c)
+{
     switch (c) {
         case ' ':
         case '\t':
@@ -476,8 +473,8 @@ bool Lexer::IsSpace(char c) {
     }
 }
 
-void Lexer::ImproveTokenType(Token &token) {
-
+void Lexer::ImproveTokenType(Token &token)
+{
     if (token.Value.empty())
         return;
 
@@ -486,13 +483,13 @@ void Lexer::ImproveTokenType(Token &token) {
         token.TokenType = tk->second;
 }
 
-const std::vector<Token> &Lexer::Tokens() const {
-
+const std::vector<Token> &Lexer::Tokens() const
+{
     return m_Tokens;
 }
 
-string Lexer::CurrentLine() {
-
+std::string Lexer::CurrentLine()
+{
     std::string line;
     size_t i = m_LineStart;
     while (i < m_Script.length()) {
@@ -506,35 +503,35 @@ string Lexer::CurrentLine() {
     return line;
 }
 
-StatusCode Lexer::SetResult(StatusCode status, string message) {
-
-    m_Status = status;
+StatusCode Lexer::SetResult(StatusCode status, std::string message)
+{
+    m_Status   = status;
     m_ErrorMsg = std::move(message);
     return m_Status;
 }
 
-StatusCode Lexer::Status() const {
-
+StatusCode Lexer::Status() const
+{
     return m_Status;
 }
 
-std::string Lexer::Message() {
-
+std::string Lexer::Message()
+{
     return m_ErrorMsg;
 }
 
-size_t Lexer::LineNum() const {
-
+size_t Lexer::LineNum() const
+{
     return m_LineNum;
 }
 
-size_t Lexer::LinePos() const {
-
+size_t Lexer::LinePos() const
+{
     return m_Pos - m_LineStart + 1;
 }
 
-string Lexer::TokenTypeToValue(TokenType tokenType) {
-
+std::string Lexer::TokenTypeToValue(TokenType tokenType)
+{
     switch (tokenType) {
         case tknSingleQuote:
             return "'";
@@ -566,11 +563,11 @@ string Lexer::TokenTypeToValue(TokenType tokenType) {
     }
 }
 
-void Lexer::AddError(string message) {
-
+void Lexer::AddError(std::string message)
+{
     CompilerMessage msg;
-    msg.Source = csLexer;
-    msg.Code = errLexError;
+    msg.Source  = csLexer;
+    msg.Code    = errLexError;
     msg.FilePos = m_Pos;
     msg.LineNum = LineNum();
     msg.LinePos = LinePos();

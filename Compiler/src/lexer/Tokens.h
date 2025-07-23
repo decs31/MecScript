@@ -5,9 +5,10 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #include <string>
+
 
 enum TokenType {
     tknNone,
@@ -152,4 +153,4 @@ struct ExprOp {
     std::string String;
 };
 
-#endif //TOKENS_H
+#endif // TOKENS_H

@@ -8,20 +8,22 @@
 #include <unordered_map>
 #include <vector>
 
-template<typename TKey, typename TValue>
-class OrderedMap {
+template <typename TKey, typename TValue> class OrderedMap
+{
 
-public:
+  public:
     typedef bool (*Predicate)(TValue &value);
 
     OrderedMap() = default;
     ~OrderedMap() = default;
 
-    size_t Size() {
+    size_t Size()
+    {
         return m_Items.size();
     }
 
-    bool Add(const TKey &key, const TValue &value) {
+    bool Add(const TKey &key, const TValue &value)
+    {
 
         size_t index = m_Items.size();
         const auto [it, added] = m_ItemMap.insert(key, index);
@@ -33,7 +35,8 @@ public:
         return true;
     }
 
-    bool Remove(const TKey &key) {
+    bool Remove(const TKey &key)
+    {
         auto it = m_ItemMap.find(key);
 
         if (it == m_ItemMap.end()) {
@@ -53,18 +56,21 @@ public:
         return true;
     }
 
-    bool Contains(const TValue &value) const {
+    bool Contains(const TValue &value) const
+    {
         return m_ItemMap.contains(value);
     }
 
-    TValue &Find(TKey &key) const {
+    TValue &Find(TKey &key) const
+    {
         auto it = m_ItemMap.find(key);
         if (it != m_ItemMap.end()) {
             return m_Items[it->second];
         }
     }
 
-    TValue &Search(Predicate predicate) const {
+    TValue &Search(Predicate predicate) const
+    {
         if (predicate == nullptr) {
             return nullptr;
         }
@@ -78,17 +84,19 @@ public:
         return nullptr;
     }
 
-    TValue &At(size_t index) const {
+    TValue &At(size_t index) const
+    {
         return m_Items.at(index);
     }
 
-    TValue& operator [](size_t idx) {
+    TValue &operator[](size_t idx)
+    {
         return m_Items[idx];
     }
 
-private:
+  private:
     std::unordered_map<TKey, size_t> m_ItemMap;
-    std::vector<TValue>m_Items;
+    std::vector<TValue> m_Items;
 };
 
-#endif //ORDEREDMAP_HPP
+#endif // ORDEREDMAP_HPP

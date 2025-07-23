@@ -5,32 +5,30 @@
 #ifndef CLASS_H_
 #define CLASS_H_
 
-#include <vector>
-#include <string>
 #include "Variable.h"
-
-using string = std::string;
+#include <string>
+#include <vector>
 
 struct ClassInfo {
     Token Token;
-    string Name;
-    int Id = -1;
+    std::string Name;
+    int Id               = -1;
     ClassInfo *Enclosing = nullptr;
     int ParentFunctionId = -1;
     std::vector<VariableInfo *> Fields;
-    std::vector<string> Methods;
-    int InitFunctionId = -1;
+    std::vector<std::string> Methods;
+    int InitFunctionId        = -1;
     int ConstructorFunctionId = -1;
 
-    int Size() const {
-
-        return (int) Fields.size();
+    int Size() const
+    {
+        return (int)Fields.size();
     }
 
-    bool HasConstructor() const {
-
+    bool HasConstructor() const
+    {
         return ConstructorFunctionId >= 0;
     }
 };
 
-#endif //CLASS_H_
+#endif // CLASS_H_

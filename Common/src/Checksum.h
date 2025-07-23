@@ -12,4 +12,4 @@ namespace Checksum
     u32 Calculate(const u8 *data, const u32 length);
 }
 
-#endif //MECSCRIPT_CHECKSUM_H
+#endif // MECSCRIPT_CHECKSUM_H

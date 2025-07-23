@@ -4,16 +4,16 @@
 
 #include "PreProcessor.h"
 
-PreProcessor::PreProcessor(ErrorHandler *errorHandler)
-: MecScriptBase(errorHandler) {
-
+PreProcessor::PreProcessor(ErrorHandler *errorHandler) : MecScriptBase(errorHandler)
+{
 }
 
-PreProcessor::~PreProcessor() {
-
+PreProcessor::~PreProcessor()
+{
 }
 
-StatusCode PreProcessor::Run(const std::vector<Token> &tokens) {
+StatusCode PreProcessor::Run(const std::vector<Token> &tokens)
+{
 
     return stsOk;
 }

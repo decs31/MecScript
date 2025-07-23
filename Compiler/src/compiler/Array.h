@@ -5,19 +5,21 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "Value.h"
-#include "NativeFunctions.h"
 #include "Instructions.h"
-#include "Variable.h"
+#include "NativeFunctions.h"
 #include "Tokens.h"
+#include "Value.h"
+#include "Variable.h"
+#include <string>
 
 struct Array {
-    string Name;
+    std::string Name;
     int Count = 0;
 
-    int StackSize() {
+    int StackSize()
+    {
         return 0;
     }
 };
 
-#endif //ARRAY_H
+#endif // ARRAY_H

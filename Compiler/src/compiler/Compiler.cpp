@@ -4,42 +4,42 @@
 
 #include "Compiler.h"
 
+#include "Checksum.h"
+#include "Console.h"
+#include "Disassembler.h"
+#include "JumpTable.hpp"
+#include "MathUtils.h"
+#include "Options.h"
+#include "ScriptInfo.h"
 #include <chrono>
 #include <fstream>
 #include <map>
-#include "Options.h"
-#include "MathUtils.h"
-#include "Console.h"
-#include "JumpTable.hpp"
-#include "Checksum.h"
-#include "Disassembler.h"
-#include "ScriptInfo.h"
 
-#define CURRENT_TOKEN_POS       m_CurrentPos
-#define CURRENT_CODE_POS        (int)CurrentFunction()->Code.size()
-#define CURRENT_SCOPE           m_ScopeDepth
+#define CURRENT_TOKEN_POS m_CurrentPos
+#define CURRENT_CODE_POS  (int)CurrentFunction()->Code.size()
+#define CURRENT_SCOPE     m_ScopeDepth
 
-static std::map<string, NativeFuncInfo> NativeFunctionMap = {
-        {"print",  NativeFuncInfo(nfPrint, dtVoid, std::vector<DataType>() = {dtString})},
-        {"println",  NativeFuncInfo(nfPrintLine, dtVoid, std::vector<DataType>() = {dtString})},
-        {"printi", NativeFuncInfo(nfPrintInt, dtVoid, std::vector<DataType>() = {dtInt32})},
-        {"printf", NativeFuncInfo(nfPrintFloat, dtVoid, std::vector<DataType>() = {dtFloat})},
-        {"printfmt", NativeFuncInfo(nfPrintFormat, dtVoid, std::vector<DataType>() = {dtString, dtFloat})},
-        {"clock",  NativeFuncInfo(nfClock, dtInt32)},
-        {"Yield", NativeFuncInfo(nfYieldFor, dtVoid, std::vector<DataType>() = {dtUint32})},
-        {"YieldUntil", NativeFuncInfo(nfYieldUntil, dtVoid, std::vector<DataType>() = {dtUint32})},
-        {"ReadRuntime", NativeFuncInfo(nfReadRuntime, dtInt32, std::vector<DataType>() = {dtUint32})},
-        {"ReadRuntimeReal", NativeFuncInfo(nfReadRuntimeReal, dtFloat, std::vector<DataType>() = {dtUint32})},
-        {"WriteRuntime", NativeFuncInfo(nfWriteRuntime, dtVoid, std::vector<DataType>() = {dtUint32, dtInt32})},
-        {"WriteRuntimeReal", NativeFuncInfo(nfWriteRuntimeReal, dtVoid, std::vector<DataType>() = {dtUint32, dtFloat})},
+static std::map<std::string, NativeFuncInfo> NativeFunctionMap = {
+    { "print", NativeFuncInfo(nfPrint, dtVoid, std::vector<DataType>() = { dtString }) },
+    { "println", NativeFuncInfo(nfPrintLine, dtVoid, std::vector<DataType>() = { dtString }) },
+    { "printi", NativeFuncInfo(nfPrintInt, dtVoid, std::vector<DataType>() = { dtInt32 }) },
+    { "printf", NativeFuncInfo(nfPrintFloat, dtVoid, std::vector<DataType>() = { dtFloat }) },
+    { "printfmt", NativeFuncInfo(nfPrintFormat, dtVoid, std::vector<DataType>() = { dtString, dtFloat }) },
+    { "clock", NativeFuncInfo(nfClock, dtInt32) },
+    { "Yield", NativeFuncInfo(nfYieldFor, dtVoid, std::vector<DataType>() = { dtUint32 }) },
+    { "YieldUntil", NativeFuncInfo(nfYieldUntil, dtVoid, std::vector<DataType>() = { dtUint32 }) },
+    { "ReadRuntime", NativeFuncInfo(nfReadRuntime, dtInt32, std::vector<DataType>() = { dtUint32 }) },
+    { "ReadRuntimeReal", NativeFuncInfo(nfReadRuntimeReal, dtFloat, std::vector<DataType>() = { dtUint32 }) },
+    { "WriteRuntime", NativeFuncInfo(nfWriteRuntime, dtVoid, std::vector<DataType>() = { dtUint32, dtInt32 }) },
+    { "WriteRuntimeReal", NativeFuncInfo(nfWriteRuntimeReal, dtVoid, std::vector<DataType>() = { dtUint32, dtFloat }) },
 };
 
-Compiler::Compiler(ErrorHandler *errorHandler, const std::string &script, const u8 flags, const std::string &fileName)
-        : MecScriptBase(errorHandler),
-          m_Lexer(errorHandler, script),
-          m_PreProcessor(errorHandler) {
-
-    m_Flags = flags;
+Compiler::Compiler(ErrorHandler *errorHandler, NativeFunctionParser *nativeFuncs, const std::string &script, const u8 flags, const std::string &fileName)
+    : CompilerBase(errorHandler, script),
+      m_PreProcessor(errorHandler)
+{
+    m_Flags       = flags;
+    m_NativeFuncs = nativeFuncs;
 
     // Push the filename into the compiled output if it's given
     if ((m_Flags & cfEmbeddedFileName) && !fileName.empty()) {
@@ -48,13 +48,13 @@ Compiler::Compiler(ErrorHandler *errorHandler, const std::string &script, const 
     }
 }
 
-Compiler::~Compiler() {
-
+Compiler::~Compiler()
+{
     Cleanup();
 }
 
-VarScopeType Compiler::CurrentScope() const {
-
+VarScopeType Compiler::CurrentScope() const
+{
     switch (m_ScopeDepth) {
         case 0:
             return scopeGlobal;
@@ -63,16 +63,16 @@ VarScopeType Compiler::CurrentScope() const {
     }
 }
 
-ScriptFunction *Compiler::CreateFunction(const string &name, FunctionType type, DataType returnType) {
-
+ScriptFunction *Compiler::CreateFunction(const std::string &name, FunctionType type, DataType returnType)
+{
     // In case the vector gets reallocated, we need to set the pointers by finding them again.
-    int id = (int) m_Functions.size();
-    auto newFunc = new ScriptFunction(type, id);
-    newFunc->Enclosing = m_CurrentFunction;
-    newFunc->Name = name;
-    newFunc->ReturnType = returnType;
+    int id               = (int)m_Functions.size();
+    auto newFunc         = new ScriptFunction(type, id);
+    newFunc->Enclosing   = m_CurrentFunction;
+    newFunc->Name        = name;
+    newFunc->ReturnType  = returnType;
     newFunc->ParentClass = CurrentClass() ? CurrentClass()->Name : "";
-    newFunc->Token = LookBack();
+    newFunc->Token       = LookBack();
 
     m_Functions.push_back(newFunc);
     m_CurrentFunction = newFunc;
@@ -80,8 +80,8 @@ ScriptFunction *Compiler::CreateFunction(const string &name, FunctionType type, 
     return m_CurrentFunction;
 }
 
-int Compiler::EndFunction() {
-
+int Compiler::EndFunction()
+{
     int completedId = m_CurrentFunction->Id;
 
     if (m_CurrentFunction->TotalLocalsHeight() > m_LocalsMax)
@@ -92,14 +92,14 @@ int Compiler::EndFunction() {
     return completedId;
 }
 
-ScriptFunction *Compiler::CurrentFunction() {
-
+ScriptFunction *Compiler::CurrentFunction()
+{
     return m_CurrentFunction;
 }
 
-ScriptFunction *Compiler::FindFunctionById(int chunkId) {
-
-    for (auto chunk: m_Functions) {
+ScriptFunction *Compiler::FindFunctionById(int chunkId)
+{
+    for (auto chunk : m_Functions) {
         if (chunk->Id == chunkId) {
             return chunk;
         }
@@ -108,7 +108,8 @@ ScriptFunction *Compiler::FindFunctionById(int chunkId) {
     return nullptr;
 }
 
-FunctionInfo *Compiler::FindFunction(const string &name) {
+FunctionInfo *Compiler::FindFunction(const std::string &name)
+{
     // Look up native functions
     FunctionInfo *func = ResolveNativeFunction(name);
     if (func != nullptr) {
@@ -116,7 +117,7 @@ FunctionInfo *Compiler::FindFunction(const string &name) {
     }
 
     // Look up script functions
-    for (auto &chunk: m_Functions) {
+    for (auto &chunk : m_Functions) {
         if (chunk->Name == name) {
             return chunk;
         }
@@ -126,29 +127,29 @@ FunctionInfo *Compiler::FindFunction(const string &name) {
     return nullptr;
 }
 
-ScriptFunction *Compiler::FindScriptFunction(const string &name) {
-
+ScriptFunction *Compiler::FindScriptFunction(const std::string &name)
+{
     FunctionInfo *func = FindFunction(name);
     if (func && func->Type != ftNative) {
-        return (ScriptFunction *) func;
+        return (ScriptFunction *)func;
     }
 
     return nullptr;
 }
 
-void Compiler::ConditionalBegin() {
-
+void Compiler::ConditionalBegin()
+{
     CurrentFunction()->ConditionalDepth++;
 }
 
-void Compiler::ConditionalEnd() {
-
+void Compiler::ConditionalEnd()
+{
     if (CurrentFunction()->ConditionalDepth > 0)
         CurrentFunction()->ConditionalDepth--;
 }
 
-StatusCode Compiler::Compile() {
-
+StatusCode Compiler::Compile()
+{
     if (m_Lexer.Status() >= errError) {
         // At this point the Lexer error can only be an empty script.
         return SetResult(errFileError);
@@ -157,7 +158,6 @@ StatusCode Compiler::Compile() {
     if (m_ErrorHandler == nullptr) {
         return SetResult(errError, "No error handler!");
     }
-
 
     m_Status = stsOk;
     MSG("Starting Compiler...");
@@ -204,109 +204,8 @@ StatusCode Compiler::Compile() {
     return SetResult(stsCompileDone, "Compile Done");
 }
 
-bool Compiler::IsAtEnd() {
-
-    if (CurrentToken().TokenType == tknEndOfFile) {
-        MSG("End of file token reached.");
-        return true;
-    }
-
-    if (m_CurrentPos >= m_Lexer.Tokens().size()) {
-        MSG("End of tokens!");
-        return true;
-    }
-
-    return false;
-}
-
-bool Compiler::IsSkippable(const Token &token) {
-
-    switch (token.TokenType) {
-        case tknComment:
-        case tknPreProcessor:
-        case tknEndLine:
-            return true;
-        default:
-            return false;
-    }
-}
-
-Token Compiler::CurrentToken() {
-
-    return TokenAt(m_CurrentPos);
-}
-
-Token Compiler::ConsumeToken(TokenType expect, int errorOffset, const string &errorMsg) {
-
-    AdvanceToken(expect, errorOffset, errorMsg);
-
-    return m_TokenPrev;
-}
-
-void Compiler::AdvanceToken(TokenType expect, int errorOffset, const string &errorMsg) {
-
-    m_TokenPrev = CurrentToken();
-
-    // Advance
-    do {
-        m_CurrentPos++;
-    } while (IsSkippable(CurrentToken()) && !IsAtEnd());
-
-    m_TokenCurrent = CurrentToken();
-    Expect(m_TokenPrev, expect, errorOffset, errorMsg);
-}
-
-bool Compiler::Expect(const Token &token, TokenType expect, int errorOffset, const string &errorMsg) {
-
-    if ((expect > tknNone) && token.TokenType != expect) {
-        size_t pos = m_CurrentPos + errorOffset;
-        Token errorToken = TokenAt(pos);
-        while (IsSkippable(errorToken)) {
-            if (errorOffset <= 0)
-                --pos;
-            else
-                ++pos;
-
-            errorToken = TokenAt(pos);
-        }
-
-        if (!errorMsg.empty()) {
-            AddError(errorMsg, errorToken);
-        } else if (errorOffset <= 0) {
-            AddError("Expected '" + Lexer::TokenTypeToValue(expect) + "' after '"
-                     + token.Value + "'.", errorToken);
-        } else {
-            AddError("Expected '" + Lexer::TokenTypeToValue(expect) + "' before '"
-                     + token.Value + "'.", errorToken);
-        }
-
-        return false;
-    }
-
-    return true;
-}
-
-bool Compiler::Check(TokenType tokenType) {
-
-    return CurrentToken().TokenType == tokenType;
-}
-
-bool Compiler::CheckAhead(TokenType tokenType, int num) {
-
-    return LookAhead(num).TokenType == tokenType;
-}
-
-bool Compiler::Match(TokenType tokenType) {
-
-    if (!Check(tokenType))
-        return false;
-
-    AdvanceToken();
-    return true;
-}
-
-bool Compiler::CheckNativeFunction(const Token &token) {
-
+bool Compiler::CheckNativeFunction(const Token &token)
+{
     auto nf = NativeFunctionMap.find(token.Value);
     if (nf != NativeFunctionMap.end())
         return true;
@@ -314,28 +213,28 @@ bool Compiler::CheckNativeFunction(const Token &token) {
     return false;
 }
 
-bool Compiler::CheckFunction(const Token &token) {
-
-    string name = token.Value;
+bool Compiler::CheckFunction(const Token &token)
+{
+    std::string name = token.Value;
 
     ScriptFunction *func = FindScriptFunction(name);
 
     return func != nullptr && func->Type == ftFunction;
 }
 
-bool Compiler::CheckMethod(const Token &token, VariableInfo *parentVar) {
-
+bool Compiler::CheckMethod(const Token &token, VariableInfo *parentVar)
+{
     if (parentVar == nullptr || !parentVar->IsClassHead()) {
         return false;
     }
 
-    string name = token.Value;
+    std::string name = token.Value;
 
     ClassInfo *klass = ResolveClass(parentVar->ParentClass);
     if (klass == nullptr)
         return false;
 
-    for (auto &m: klass->Methods) {
+    for (auto &m : klass->Methods) {
         if (m == "__" + klass->Name + "__" + name)
             return true;
     }
@@ -343,108 +242,8 @@ bool Compiler::CheckMethod(const Token &token, VariableInfo *parentVar) {
     return false;
 }
 
-Token Compiler::LookAhead(int num) {
-
-    size_t pos = m_CurrentPos + num;
-    return TokenAt(pos);
-}
-
-Token Compiler::LookBack(int num) {
-
-    if (m_CurrentPos < (size_t) num) {
-        return TokenAt(0);
-    }
-
-    size_t pos = m_CurrentPos - num;
-    return TokenAt(pos);
-}
-
-Token Compiler::TokenAt(size_t pos) {
-
-    if (m_Lexer.Tokens().empty()) {
-        return {};
-    }
-
-    if (pos >= m_Lexer.Tokens().size())
-        return m_Lexer.Tokens().back();
-
-    return m_Lexer.Tokens().at(pos);
-}
-
-void Compiler::AddError(std::string errMsg, const Token &token) {
-
-    AddError(std::move(errMsg), token.Position.LineNum, token.Position.LinePos);
-}
-
-void Compiler::AddError(std::string errMsg, size_t lineNum, size_t linePos) {
-
-    if (m_PanicMode) // Already in error, don't report more.
-        return;
-
-    m_PanicMode = true;
-    m_Status = errPanicSync;
-
-    CompilerMessage msg;
-    msg.Source = csParser;
-    msg.Code = errSyntaxError;
-    msg.FilePos = 0;
-    msg.LineNum = lineNum;
-    msg.LinePos = linePos;
-    msg.Message = std::move(errMsg);
-
-    m_ErrorHandler->AddMessage(msg);
-}
-
-void Compiler::AddWarning(std::string warningMsg, const Token &token) {
-
-    AddWarning(std::move(warningMsg), token.Position.LineNum, token.Position.LinePos);
-}
-
-void Compiler::AddWarning(std::string warningMsg, size_t lineNum, size_t linePos) {
-
-    CompilerMessage msg;
-    msg.Source = csParser;
-    msg.Code = wrnWarning;
-    msg.FilePos = 0;
-    msg.LineNum = lineNum;
-    msg.LinePos = linePos;
-    msg.Message = std::move(warningMsg);
-
-    m_ErrorHandler->AddMessage(msg);
-}
-
-void Compiler::Synchronize() {
-
-    m_Status = stsParserHasErrors; // Maybe?
-    m_PanicMode = false;
-
-    while (!IsAtEnd()) {
-        switch (CurrentToken().TokenType) {
-            case tknVoid:
-            case tknChar:
-            case tknByte:
-            case tknShort:
-            case tknUShort:
-            case tknInt:
-            case tknUInt:
-            case tknFloat:
-            case tknFor:
-            case tknIf:
-            case tknWhile:
-            case tknSwitch:
-            case tknReturn:
-            case tknClass:
-                return;
-
-            default:; // Do nothing.
-        }
-
-        AdvanceToken();
-    }
-}
-
-StatusCode Compiler::SetResult(StatusCode result, std::string message) {
-
+StatusCode Compiler::SetResult(StatusCode result, std::string message)
+{
     m_Result = result;
     if (!message.empty())
         m_Message = std::move(message);
@@ -452,18 +251,18 @@ StatusCode Compiler::SetResult(StatusCode result, std::string message) {
     return m_Result;
 }
 
-StatusCode Compiler::Result() {
-
+StatusCode Compiler::Result()
+{
     return m_Result;
 }
 
-string Compiler::Message() {
-
+std::string Compiler::Message()
+{
     return m_Message;
 }
 
-void Compiler::RunParserFunction(ParseFunc func, bool canAssign) {
-
+void Compiler::RunParserFunction(ParseFunc func, bool canAssign)
+{
     switch (func) {
         case fnGrouping:
             Grouping();
@@ -510,46 +309,46 @@ void Compiler::RunParserFunction(ParseFunc func, bool canAssign) {
     }
 }
 
-void Compiler::EmitByte(opCode_t byteCode) {
-
+void Compiler::EmitByte(opCode_t byteCode)
+{
     CurrentFunction()->Code.push_back(byteCode);
 }
 
-void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1) {
-
+void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1)
+{
     EmitByte(byte0);
     EmitByte(byte1);
 }
 
-void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1, opCode_t byte2) {
-
+void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1, opCode_t byte2)
+{
     EmitByte(byte0);
     EmitByte(byte1);
     EmitByte(byte2);
 }
 
-void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1, opCode_t byte2, opCode_t byte3) {
-
+void Compiler::EmitBytes(opCode_t byte0, opCode_t byte1, opCode_t byte2, opCode_t byte3)
+{
     EmitByte(byte0);
     EmitByte(byte1);
     EmitByte(byte2);
     EmitByte(byte3);
 }
 
-void Compiler::EmitShortArg(opCode_t code, int arg) {
-
-    u16 shortArg = (u16) arg;
+void Compiler::EmitShortArg(opCode_t code, int arg)
+{
+    u16 shortArg = (u16)arg;
     EmitBytes(code, mByte0(shortArg), mByte1(shortArg));
 }
 
-void Compiler::EmitIntArg(opCode_t code, int arg) {
-
+void Compiler::EmitIntArg(opCode_t code, int arg)
+{
     EmitByte(code);
     EmitInt(arg);
 }
 
-void Compiler::EmitPush(int count) {
-
+void Compiler::EmitPush(int count)
+{
     if (count == 0) {
         return;
     }
@@ -566,8 +365,8 @@ void Compiler::EmitPush(int count) {
     EmitBytes(OP_PUSH_N, count);
 }
 
-void Compiler::EmitPop(int count) {
-
+void Compiler::EmitPop(int count)
+{
     if (count == 0) {
         return;
     }
@@ -584,44 +383,43 @@ void Compiler::EmitPop(int count) {
     EmitBytes(OP_POP_N, count);
 }
 
-int Compiler::EmitShort(int value) {
-
+int Compiler::EmitShort(int value)
+{
     u16 shortVal = (u16)value;
     EmitBytes(mByte0(shortVal), mByte1(shortVal));
 
     return CURRENT_CODE_POS - 2;
 }
 
-void Compiler::PatchShort(int offset, int value) {
-
-    u16 shortVal = (u16)value;
-    CurrentFunction()->Code[offset] = mByte0(shortVal);
+void Compiler::PatchShort(int offset, int value)
+{
+    u16 shortVal                        = (u16)value;
+    CurrentFunction()->Code[offset]     = mByte0(shortVal);
     CurrentFunction()->Code[offset + 1] = mByte1(shortVal);
 }
 
-int Compiler::EmitInt(int value) {
-
+int Compiler::EmitInt(int value)
+{
     EmitBytes(mByte0(value), mByte1(value), mByte2(value), mByte3(value));
 
     return CURRENT_CODE_POS - 4;
 }
 
-void Compiler::PatchInt(int offset, int value) {
-
-    CurrentFunction()->Code[offset] = mByte0(value);
+void Compiler::PatchInt(int offset, int value)
+{
+    CurrentFunction()->Code[offset]     = mByte0(value);
     CurrentFunction()->Code[offset + 1] = mByte1(value);
     CurrentFunction()->Code[offset + 2] = mByte2(value);
     CurrentFunction()->Code[offset + 3] = mByte3(value);
 }
 
-u32 Compiler::AddConstant(const ConstantInfo &constant) {
-
+u32 Compiler::AddConstant(const ConstantInfo &constant)
+{
     // Check if it already exists
     // Once the type matches we only need to compare one of the data types
     // TODO: This probably doesn't actually need to check the type at all
     for (size_t i = 0; i < m_ConstValues.size(); ++i) {
-        if (constant.Type == m_ConstValues[i].Type &&
-            constant.ConstValue.Int == m_ConstValues[i].ConstValue.Int) {
+        if (constant.Type == m_ConstValues[i].Type && constant.ConstValue.Int == m_ConstValues[i].ConstValue.Int) {
             return i;
         }
     }
@@ -631,8 +429,8 @@ u32 Compiler::AddConstant(const ConstantInfo &constant) {
     return (m_ConstValues.size() - 1);
 }
 
-void Compiler::EmitConstant(const ConstantInfo &constant) {
-
+void Compiler::EmitConstant(const ConstantInfo &constant)
+{
     u32 pos = AddConstant(constant);
 
     if (pos > 0xFFFFFF) {
@@ -641,7 +439,7 @@ void Compiler::EmitConstant(const ConstantInfo &constant) {
     }
 
     if (pos <= 0xFF) {
-        EmitBytes(OP_CONSTANT, (opCode_t) pos);
+        EmitBytes(OP_CONSTANT, (opCode_t)pos);
     } else if (pos <= 0xFFFF) {
         EmitBytes(OP_CONSTANT_16, mByte0(pos), mByte1(pos));
     } else {
@@ -650,23 +448,20 @@ void Compiler::EmitConstant(const ConstantInfo &constant) {
     }
 }
 
-u32 Compiler::AddString(const string &str) {
+u32 Compiler::AddString(const std::string &str)
+{
     // Check if it already exists
-    for (auto &s: m_ConstStrings) {
+    for (auto &s : m_ConstStrings) {
         if (s.String == str) {
             return s.Index;
         }
     }
 
     // Add new constant string
-    const u32 newIndex = (u32) m_StringData.size();
-    StringData newString {
-            .Index = newIndex,
-            .Length = (uint32_t) str.length(),
-            .String = str
-    };
+    const u32 newIndex = (u32)m_StringData.size();
+    StringData newString{ .Index = newIndex, .Length = (uint32_t)str.length(), .String = str };
 
-    for (auto c: str) {
+    for (auto c : str) {
         m_StringData.push_back(c);
     }
     // Add null char(s) until the size is divisible by 4.
@@ -682,11 +477,12 @@ u32 Compiler::AddString(const string &str) {
     return newIndex;
 }
 
-void Compiler::EmitString(const string &str) {
+void Compiler::EmitString(const std::string &str)
+{
     const u32 pos = AddString(str);
 
     if (pos > 0xFFFFFF) {
-        AddError("Maximum string storage size reached.", CurrentToken());
+        AddError("Maximum std::string storage size reached.", CurrentToken());
         return;
     }
 
@@ -699,19 +495,23 @@ void Compiler::EmitString(const string &str) {
     }
 }
 
-void Compiler::EndCompile() {
-
+void Compiler::EndCompile()
+{
     EmitByte(OP_RETURN);
 }
 
-void Compiler::Declaration() {
-
+void Compiler::Declaration()
+{
     DataType varType;
     u32 varFlags;
 
     if (Match(tknClass)) {
         ClassDeclaration();
     } else if (MatchTypeDeclaration(varType, varFlags)) {
+        TypeDeclaration(varType, varFlags);
+    } else if (MatchClassInstance()) {
+        varType  = dtClass;
+        varFlags = vfNormal;
         TypeDeclaration(varType, varFlags);
     } else {
         Statement();
@@ -722,8 +522,8 @@ void Compiler::Declaration() {
     }
 }
 
-void Compiler::TypeDeclaration(DataType dataType, u32 flags) {
-
+void Compiler::TypeDeclaration(DataType dataType, u32 flags)
+{
     if (dataType == dtClass) {
         ClassInstanceDeclaration();
     } else if (CheckAhead(tknLeftParen)) {
@@ -745,8 +545,8 @@ void Compiler::TypeDeclaration(DataType dataType, u32 flags) {
 // branches of an "if" statement.
 //
 // Unlike expressions, statements do not leave a value on the stack.
-void Compiler::Statement() {
-
+void Compiler::Statement()
+{
     if (Match(tknBreak)) {
         BreakStatement();
     } else if (Match(tknContinue)) {
@@ -770,8 +570,8 @@ void Compiler::Statement() {
     }
 }
 
-void Compiler::Block() {
-
+void Compiler::Block()
+{
     while (!Check(tknRightCurly) && !IsAtEnd()) {
         Declaration();
     }
@@ -780,12 +580,12 @@ void Compiler::Block() {
 }
 
 /* Updates the current type and returns the previous expected type */
-DataType Compiler::TypeBegin(TypeInfo *typeInfo) {
-
+DataType Compiler::TypeBegin(TypeInfo *typeInfo)
+{
     DataType expecting = dtNone;
 
     if (m_CurrentType != nullptr) {
-        expecting = m_CurrentType->Type;
+        expecting                      = m_CurrentType->Type;
         typeInfo->IgnoreExpectingOnSet = m_CurrentType->IgnoreExpectingOnSet;
     }
 
@@ -796,8 +596,8 @@ DataType Compiler::TypeBegin(TypeInfo *typeInfo) {
     return expecting;
 }
 
-DataType Compiler::TypeSetCurrent(const DataType type, bool force) {
-
+DataType Compiler::TypeSetCurrent(const DataType type, bool force)
+{
     if (m_CurrentType == nullptr)
         return dtNone;
 
@@ -817,21 +617,21 @@ DataType Compiler::TypeSetCurrent(const DataType type, bool force) {
     return m_CurrentType->Type;
 }
 
-DataType Compiler::CurrentType() {
-
+DataType Compiler::CurrentType()
+{
     if (m_CurrentType == nullptr)
         return dtNone;
 
     return (m_CurrentType->Type == dtNone) ? m_CurrentType->Expecting() : m_CurrentType->Type;
 }
 
-TypeCompatibility Compiler::TypeCheck(DataType type, const string &errorMessage) {
-
+TypeCompatibility Compiler::TypeCheck(DataType type, const std::string &errorMessage)
+{
     if (m_CurrentType == nullptr)
         return tcNotApplicable;
 
     DataType expecting = CurrentType();
-    auto compat = TypeInfo::CheckCompatibility(expecting, type);
+    auto compat        = TypeInfo::CheckCompatibility(expecting, type);
     if (compat == tcIncompatible) {
         if (!errorMessage.empty()) {
             AddError(errorMessage, LookBack());
@@ -843,22 +643,23 @@ TypeCompatibility Compiler::TypeCheck(DataType type, const string &errorMessage)
     return compat;
 }
 
-DataType Compiler::TypeEnd() {
-
+DataType Compiler::TypeEnd()
+{
     DataType dataType = CurrentType();
-    m_CurrentType = m_CurrentType->Enclosing;
+    m_CurrentType     = m_CurrentType->Enclosing;
     return dataType;
 }
 
-DataType Compiler::Expression() {
-
+DataType Compiler::Expression()
+{
     TypeInfo type;
     TypeBegin(&type);
     ParsePrecedence(precAssignment);
     return TypeEnd();
 }
 
-ConstantInfo Compiler::ParseNumericLiteral() {
+ConstantInfo Compiler::ParseNumericLiteral()
+{
     // Get the token that got us here
     const Token &token = LookBack();
 
@@ -866,16 +667,16 @@ ConstantInfo Compiler::ParseNumericLiteral() {
 
     // Boolean
     if (token.TokenType == tknFalse) {
-        constant.Type = dtBool;
+        constant.Type       = dtBool;
         constant.ConstValue = BOOL_VAL(false);
         return constant;
     } else if (token.TokenType == tknTrue) {
-        constant.Type = dtBool;
+        constant.Type       = dtBool;
         constant.ConstValue = BOOL_VAL(true);
         return constant;
     }
 
-        // Float
+    // Float
     else if (token.TokenType == tknFloatLiteral) {
         constant.Type = dtFloat;
         float fVal;
@@ -892,20 +693,20 @@ ConstantInfo Compiler::ParseNumericLiteral() {
         }
     }
 
-        // Int
+    // Int
     else if (token.TokenType == tknIntegerLiteral) {
         constant.Type = dtInt32;
         int iVal;
-        string str;
+        std::string str;
         int base;
         if (token.Value.starts_with("0b")) { // Binary
-            str = token.Value.substr(2);
+            str  = token.Value.substr(2);
             base = 2;
         } else if (token.Value.starts_with("0o")) { // Octal
-            str = token.Value.substr(2);
+            str  = token.Value.substr(2);
             base = 8;
         } else { // Decimal or Hex
-            str = token.Value;
+            str  = token.Value;
             base = 0; // Determined from string
         }
 
@@ -917,20 +718,20 @@ ConstantInfo Compiler::ParseNumericLiteral() {
         }
     }
 
-        // Null / Nil
+    // Null / Nil
     else if (token.TokenType == tknNull) {
-        constant.Type = dtInt32;
+        constant.Type       = dtInt32;
         constant.ConstValue = INT32_VAL(0);
         return constant;
     }
 
-    constant.Type = dtInt32;
+    constant.Type       = dtInt32;
     constant.ConstValue = INT32_VAL(0);
     return constant;
 }
 
-void Compiler::NumericLiteral() {
-
+void Compiler::NumericLiteral()
+{
     const ConstantInfo literal = ParseNumericLiteral();
 
     EmitConstant(literal);
@@ -940,11 +741,11 @@ void Compiler::NumericLiteral() {
     TypeCompatibility compat = TypeCheck(literal.Type);
 
     if (compat == tcCastSignedToFloat) {
-        string msg = "Integer literal will be implicitly cast to surrounding float type.\n";
+        std::string msg = "Integer literal will be implicitly cast to surrounding float type.\n";
         msg += "Add decimal place(s) to specify a floating point literal.";
         AddWarning(msg, LookBack());
     } else if (compat == tcCastFloatToSigned) {
-        string msg = "Floating point literal will be implicitly cast to surrounding integer type.\n";
+        std::string msg = "Floating point literal will be implicitly cast to surrounding integer type.\n";
         msg += "Remove decimal place(s) to specify a integer literal.";
         AddWarning(msg, LookBack());
     }
@@ -952,15 +753,15 @@ void Compiler::NumericLiteral() {
     EmitCast(compat);
 }
 
-void Compiler::String() {
-
+void Compiler::String()
+{
     Token stringToken = LookBack();
 
     EmitString(stringToken.Value);
 }
 
-void Compiler::Variable(bool canAssign) {
-
+void Compiler::Variable(bool canAssign)
+{
     const Token &token = LookBack();
 
     if (CheckNativeFunction(token)) {
@@ -972,8 +773,8 @@ void Compiler::Variable(bool canAssign) {
     }
 }
 
-void Compiler::And() {
-
+void Compiler::And()
+{
     int endJump = EmitJump(OP_JUMP_IF_FALSE);
 
     EmitByte(OP_POP);
@@ -981,8 +782,8 @@ void Compiler::And() {
     PatchJump(endJump);
 }
 
-void Compiler::Or() {
-
+void Compiler::Or()
+{
     int endJump = EmitJump(OP_JUMP_IF_TRUE);
 
     EmitByte(OP_POP);
@@ -990,8 +791,8 @@ void Compiler::Or() {
     PatchJump(endJump);
 }
 
-void Compiler::VariablePrefix() {
-
+void Compiler::VariablePrefix()
+{
     TokenType operatorType = LookBack().TokenType;
     // Make sure the next token is a variable
     if (!Match(tknIdentifier)) {
@@ -999,8 +800,8 @@ void Compiler::VariablePrefix() {
         return;
     }
 
-    const string &name = LookBack().Value;
-    VariableInfo *variable = ResolveVariable(name);
+    const std::string &name = LookBack().Value;
+    VariableInfo *variable  = ResolveVariable(name);
     if (variable == nullptr) {
         return;
     }
@@ -1026,8 +827,8 @@ void Compiler::VariablePrefix() {
     EmitCast(cast);
 }
 
-void Compiler::VariablePostfix(bool canAssign) {
-
+void Compiler::VariablePostfix(bool canAssign)
+{
     if (!canAssign) {
         AddError("Token is not assignable.", LookBack(2));
         return;
@@ -1035,8 +836,8 @@ void Compiler::VariablePostfix(bool canAssign) {
 
     // The value is already on the stack, we only want to modify it's stored value.
     // The stack gets left alone.
-    const string &name = LookBack(2).Value;
-    VariableInfo *variable = ResolveVariable(name);
+    const std::string &name = LookBack(2).Value;
+    VariableInfo *variable  = ResolveVariable(name);
 
     if (variable == nullptr) {
         return;
@@ -1059,8 +860,8 @@ void Compiler::VariablePostfix(bool canAssign) {
     }
 }
 
-void Compiler::Unary() {
-
+void Compiler::Unary()
+{
     TokenType operatorType = LookBack().TokenType;
 
     TypeInfo unaryType;
@@ -1090,32 +891,25 @@ void Compiler::Unary() {
     TypeEnd();
 }
 
-void Compiler::Binary() {
-
+void Compiler::Binary()
+{
     DataType lhsType = CurrentType();
     TypeInfo binType;
     TypeBegin(&binType);
 
     TokenType operatorType = LookBack().TokenType;
-    ParseRule rule = Rules::Get(operatorType);
-    ParsePrecedence((Precedence) (rule.Prec + 1));
+    ParseRule rule         = Rules::Get(operatorType);
+    ParsePrecedence((Precedence)(rule.Prec + 1));
 
     DataType rhsType = CurrentType();
 
     DataType binaryType = (lhsType == dtFloat || rhsType == dtFloat) ? dtFloat : dtInt32;
 
     // Override binary type to int for certain ops
-    if (operatorType == tknBitwiseAnd ||
-        operatorType == tknBitwiseAndEquals ||
-        operatorType == tknBitwiseOr ||
-        operatorType == tknBitwiseOrEquals ||
-        operatorType == tknBitwiseXor ||
-        operatorType == tknBitwiseXorEquals ||
-        operatorType == tknShiftLeft ||
-        operatorType == tknShiftRight) {
+    if (operatorType == tknBitwiseAnd || operatorType == tknBitwiseAndEquals || operatorType == tknBitwiseOr || operatorType == tknBitwiseOrEquals ||
+        operatorType == tknBitwiseXor || operatorType == tknBitwiseXorEquals || operatorType == tknShiftLeft || operatorType == tknShiftRight) {
         if (binaryType == dtFloat) {
-            AddError("Cannot use floating point numbers in binary operations.",
-                     LookBack(lhsType == dtFloat ? 3 : 1));
+            AddError("Cannot use floating point numbers in binary operations.", LookBack(lhsType == dtFloat ? 3 : 1));
         }
         binaryType = dtInt32;
     } else if (operatorType == tknPercent) {
@@ -1204,7 +998,8 @@ void Compiler::Binary() {
     EmitCast(TypeCheck(binaryType));
 }
 
-void Compiler::EmitAdd(DataType type) {
+void Compiler::EmitAdd(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_ADD_F);
     } else if (type == dtUint32) {
@@ -1214,7 +1009,8 @@ void Compiler::EmitAdd(DataType type) {
     }
 }
 
-void Compiler::EmitSubtract(DataType type) {
+void Compiler::EmitSubtract(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_SUB_F);
     } else if (type == dtUint32) {
@@ -1224,7 +1020,8 @@ void Compiler::EmitSubtract(DataType type) {
     }
 }
 
-void Compiler::EmitMultiply(DataType type) {
+void Compiler::EmitMultiply(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_MULT_F);
     } else if (type == dtUint32) {
@@ -1234,7 +1031,8 @@ void Compiler::EmitMultiply(DataType type) {
     }
 }
 
-void Compiler::EmitDivide(DataType type) {
+void Compiler::EmitDivide(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_DIV_F);
     } else if (type == dtUint32) {
@@ -1244,7 +1042,8 @@ void Compiler::EmitDivide(DataType type) {
     }
 }
 
-void Compiler::EmitEqual(DataType type) {
+void Compiler::EmitEqual(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_EQUAL_F);
     } else if (type == dtUint32) {
@@ -1254,7 +1053,8 @@ void Compiler::EmitEqual(DataType type) {
     }
 }
 
-void Compiler::EmitNotEqual(DataType type) {
+void Compiler::EmitNotEqual(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_NOT_EQUAL_F);
     } else if (type == dtUint32) {
@@ -1264,7 +1064,8 @@ void Compiler::EmitNotEqual(DataType type) {
     }
 }
 
-void Compiler::EmitLessThan(DataType type) {
+void Compiler::EmitLessThan(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_LESS_F);
     } else if (type == dtUint32) {
@@ -1274,7 +1075,8 @@ void Compiler::EmitLessThan(DataType type) {
     }
 }
 
-void Compiler::EmitLessThanOrEqual(DataType type) {
+void Compiler::EmitLessThanOrEqual(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_LESS_OR_EQUAL_F);
     } else if (type == dtUint32) {
@@ -1284,7 +1086,8 @@ void Compiler::EmitLessThanOrEqual(DataType type) {
     }
 }
 
-void Compiler::EmitGreaterThan(DataType type) {
+void Compiler::EmitGreaterThan(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_GREATER_F);
     } else if (type == dtUint32) {
@@ -1294,7 +1097,8 @@ void Compiler::EmitGreaterThan(DataType type) {
     }
 }
 
-void Compiler::EmitGreaterThanOrEqual(DataType type) {
+void Compiler::EmitGreaterThanOrEqual(DataType type)
+{
     if (type == dtFloat) {
         EmitByte(OP_GREATER_OR_EQUAL_F);
     } else if (type == dtUint32) {
@@ -1304,8 +1108,8 @@ void Compiler::EmitGreaterThanOrEqual(DataType type) {
     }
 }
 
-void Compiler::Grouping() {
-
+void Compiler::Grouping()
+{
     // Group type needs to start fresh and ignore any surrounding type
     TypeInfo groupType;
     TypeBegin(&groupType);
@@ -1324,12 +1128,12 @@ void Compiler::Grouping() {
     EmitCast(TypeCheck(exprType));
 }
 
-void Compiler::ParsePrecedence(Precedence precedence) {
-
+void Compiler::ParsePrecedence(Precedence precedence)
+{
     Token token = ConsumeToken();
 
     // Find the prefix operator
-    bool canAssign = precedence <= precAssignment;
+    bool canAssign       = precedence <= precAssignment;
     ParseFunc prefixFunc = Rules::Get(token.TokenType).Prefix;
     if (prefixFunc == fnNone) {
         AddError("Expected expression.", token);
@@ -1341,7 +1145,7 @@ void Compiler::ParsePrecedence(Precedence precedence) {
 
     // Compile infix operations of higher or equal precedence
     while (precedence <= Rules::Get(CurrentToken().TokenType).Prec) {
-        token = ConsumeToken();
+        token               = ConsumeToken();
         ParseFunc infixFunc = Rules::Get(token.TokenType).Infix;
         RunParserFunction(infixFunc, canAssign);
     }
@@ -1351,8 +1155,8 @@ void Compiler::ParsePrecedence(Precedence precedence) {
     }
 }
 
-void Compiler::IfStatement() {
-
+void Compiler::IfStatement()
+{
     ConditionalBegin();
 
     // Condition
@@ -1381,8 +1185,8 @@ void Compiler::IfStatement() {
     PatchJump(elseJump);
 }
 
-void Compiler::Ternary() {
-
+void Compiler::Ternary()
+{
     // [condition] ? [trueExpr] : [falseExpr];
     // There should be a value on the stack now
     // Use it as the condition
@@ -1390,7 +1194,7 @@ void Compiler::Ternary() {
     // Clear the current type as the boolean statement isn't relevant anymore
     TypeSetCurrent(dtNone, true);
     DataType expectingType = CurrentType();
-    DataType valueType = dtNone;
+    DataType valueType     = dtNone;
 
     // If the condition is false we jump over to true expression
     int falseJump = EmitJump(OP_JUMP_IF_FALSE);
@@ -1407,7 +1211,7 @@ void Compiler::Ternary() {
 
     // ==== False expression ====
     PatchJump(falseJump); // << False condition lands here
-    EmitByte(OP_POP); // Get the condition off the stack
+    EmitByte(OP_POP);     // Get the condition off the stack
 
     valueType = Expression();
 
@@ -1416,8 +1220,7 @@ void Compiler::Ternary() {
 
     TypeCompatibility compat = TypeCheck(valueType);
     if (compat != tcMatch && compat > tcIncompatible) {
-        AddWarning("Expression will be implicitly cast to assignee type: "
-                   + DataTypeToString(expectingType), LookBack());
+        AddWarning("Expression will be implicitly cast to assignee type: " + DataTypeToString(expectingType), LookBack());
     }
     EmitCast(compat);
 
@@ -1425,8 +1228,8 @@ void Compiler::Ternary() {
     TypeSetCurrent(expectingType);
 }
 
-void Compiler::ReturnStatement() {
-
+void Compiler::ReturnStatement()
+{
     if (CurrentFunction()->Type == ftScript) {
         AddError("Can't return from top-level code.", LookBack());
     }
@@ -1439,7 +1242,7 @@ void Compiler::ReturnStatement() {
         }
         EmitReturn();
     } else {
-        u32 pos = CURRENT_TOKEN_POS;
+        u32 pos             = CURRENT_TOKEN_POS;
         DataType returnType = Expression();
 
         TypeCompatibility returnCompat = TypeInfo::CheckCompatibility(returnType, expectedReturn);
@@ -1458,19 +1261,19 @@ void Compiler::ReturnStatement() {
 
 // Marks the beginning of a loop. Keeps track of the current instruction so we
 // know what to loop back to at the end of the body.
-void Compiler::LoopBegin(LoopInfo *loop) {
-
+void Compiler::LoopBegin(LoopInfo *loop)
+{
     loop->Enclosing = m_CurrentLoop;
-    m_CurrentLoop = loop;
+    m_CurrentLoop   = loop;
 
-    loop->Start = CURRENT_CODE_POS;
+    loop->Start      = CURRENT_CODE_POS;
     loop->ScopeDepth = CURRENT_SCOPE;
 }
 
 // Compiles the body of the loop and tracks its extent so that contained "break"
 // statements can be handled correctly.
-void Compiler::LoopBody() {
-
+void Compiler::LoopBody()
+{
     m_CurrentLoop->Body = CURRENT_CODE_POS;
     Statement();
 }
@@ -1478,17 +1281,17 @@ void Compiler::LoopBody() {
 // Emits the [OP_JUMP_IF_FALSE] instruction used to test the loop condition and
 // potentially exit the loop. Keeps track of the instruction so we can patch it
 // later once we know where the end of the body is.
-void Compiler::LoopTestExit() {
-
+void Compiler::LoopTestExit()
+{
     m_CurrentLoop->ExitJump = EmitJump(OP_JUMP_IF_FALSE);
 }
 
 // Ends the current innermost loop. Patches up all jumps and breaks now that
 // we know where the end of the loop is.
-void Compiler::LoopEnd() {
-
+void Compiler::LoopEnd()
+{
     int currentCode = CURRENT_CODE_POS;
-    int loopOffset = currentCode - m_CurrentLoop->Start + 3;
+    int loopOffset  = currentCode - m_CurrentLoop->Start + 3;
     EmitShortArg(OP_LOOP, loopOffset);
 
     // Exit jump not used by infinite for loops
@@ -1502,12 +1305,12 @@ void Compiler::LoopEnd() {
     int i = m_CurrentLoop->Body;
     while (i < CURRENT_CODE_POS) {
         if (CurrentFunction()->Code[i] == OP_BREAK) {
-            //m_CodeBytes[i] = OP_JUMP;
+            // m_CodeBytes[i] = OP_JUMP;
             PatchJump(i + 1);
             i += 3;
         } else {
             // Skip this instruction and its arguments.
-            //i += 1 + getByteCountForArguments(compiler->fn->code.data, compiler->fn->constants.data, i);
+            // i += 1 + getByteCountForArguments(compiler->fn->code.data, compiler->fn->constants.data, i);
             ++i;
         }
     }
@@ -1515,8 +1318,8 @@ void Compiler::LoopEnd() {
     m_CurrentLoop = m_CurrentLoop->Enclosing;
 }
 
-void Compiler::WhileStatement() {
-
+void Compiler::WhileStatement()
+{
     LoopInfo loop;
     LoopBegin(&loop);
 
@@ -1533,8 +1336,8 @@ void Compiler::WhileStatement() {
     LoopEnd();
 }
 
-void Compiler::ForStatement() {
-
+void Compiler::ForStatement()
+{
     ScopeBegin();
     ConsumeToken(tknLeftParen, -1, "Expected '(' after 'for' statement.");
 
@@ -1565,7 +1368,7 @@ void Compiler::ForStatement() {
 
     // Post loop expression
     if (!Match(tknRightParen)) {
-        int bodyJump = EmitJump(OP_JUMP);
+        int bodyJump       = EmitJump(OP_JUMP);
         int incrementStart = CURRENT_CODE_POS;
         Expression();
         EmitByte(OP_POP);
@@ -1586,34 +1389,35 @@ void Compiler::ForStatement() {
 }
 
 // Marks the beginning of a switch
-void Compiler::SwitchBegin(SwitchInfo *switchInfo) {
-
+void Compiler::SwitchBegin(SwitchInfo *switchInfo)
+{
     switchInfo->Enclosing = m_CurrentSwitch;
-    m_CurrentSwitch = switchInfo;
+    m_CurrentSwitch       = switchInfo;
 
     switchInfo->ScopeDepth = CURRENT_SCOPE;
 }
 
 // Marks the body of a switch
-void Compiler::SwitchBody() {
-
+void Compiler::SwitchBody()
+{
     m_CurrentSwitch->Body = CURRENT_CODE_POS;
 }
 
 // Ends the current innermost loop. Patches up all jumps and breaks now that
 // we know where the end of the loop is.
-void Compiler::SwitchEnd() {
+void Compiler::SwitchEnd()
+{
     // Find any break placeholder instructions (which will be OP_BREAK in the
     // bytecode) and replace them with real jumps.
     int i = m_CurrentSwitch->Body;
     while (i < CURRENT_CODE_POS) {
         if (CurrentFunction()->Code[i] == OP_BREAK) {
-            //m_CodeBytes[i] = OP_JUMP;
+            // m_CodeBytes[i] = OP_JUMP;
             PatchJump(i + 1);
             i += 3;
         } else {
             // Skip this instruction and its arguments.
-            //i += 1 + getByteCountForArguments(compiler->fn->code.data, compiler->fn->constants.data, i);
+            // i += 1 + getByteCountForArguments(compiler->fn->code.data, compiler->fn->constants.data, i);
             ++i;
         }
     }
@@ -1621,7 +1425,8 @@ void Compiler::SwitchEnd() {
     m_CurrentSwitch = m_CurrentSwitch->Enclosing;
 }
 
-void Compiler::SwitchStatement() {
+void Compiler::SwitchStatement()
+{
     ScopeBegin();
     SwitchInfo switchInfo;
     SwitchBegin(&switchInfo);
@@ -1649,8 +1454,8 @@ void Compiler::SwitchStatement() {
      */
 
     int switchJumpPos = EmitJump(OP_SWITCH);
-    int minValuePos = EmitInt(0);
-    int maxValuePos = EmitInt(0);
+    int minValuePos   = EmitInt(0);
+    int maxValuePos   = EmitInt(0);
 
     SwitchBody();
 
@@ -1665,7 +1470,7 @@ void Compiler::SwitchStatement() {
             }
 
             const Token &caseToken = LookBack();
-            ConstantInfo value = ParseNumericLiteral();
+            ConstantInfo value     = ParseNumericLiteral();
 
             // Check the type of the case label. Input values must be integers
             TypeCompatibility caseCompat = TypeInfo::CheckCompatibility(switchType, value.Type);
@@ -1674,9 +1479,8 @@ void Compiler::SwitchStatement() {
             }
 
             // Make sure it doesn't already exist
-            if (!jumpTable.Add(value.ConstValue.Int, CURRENT_CODE_POS)){
-                AddError("case label '" + caseToken.Value + "' already exists.",
-                         caseToken);
+            if (!jumpTable.Add(value.ConstValue.Int, CURRENT_CODE_POS)) {
+                AddError("case label '" + caseToken.Value + "' already exists.", caseToken);
             }
 
             ConsumeToken(tknColon, -1, "Expected ':' after case label.");
@@ -1698,12 +1502,11 @@ void Compiler::SwitchStatement() {
         }
     }
 
-
     ConsumeToken(tknRightCurly, -1, "Expected '}' to end 'switch' body.");
 
     if (jumpTable.Count() > 0) {
-        int caseMin = jumpTable.LowestValue();
-        int caseMax = jumpTable.HighestValue();
+        int caseMin   = jumpTable.LowestValue();
+        int caseMax   = jumpTable.HighestValue();
         int caseRange = caseMax - caseMin;
 
         // Warn about big jump table
@@ -1748,8 +1551,8 @@ void Compiler::SwitchStatement() {
     ScopeEnd();
 }
 
-void Compiler::SwitchAsIfElse() {
-
+void Compiler::SwitchAsIfElse()
+{
     ScopeBegin();
     SwitchInfo switchInfo;
     SwitchBegin(&switchInfo);
@@ -1763,9 +1566,9 @@ void Compiler::SwitchAsIfElse() {
     // Create a local variable from it, so it's easy to access later.
     VmPointer inputPtr = VmPointer(CurrentFunction()->Locals.size(), switchType, scopeLocal);
     VariableInfo *swVar;
-    swVar = new VariableInfo();
-    swVar->Name = "<switch>";
-    swVar->Depth = m_ScopeDepth;
+    swVar          = new VariableInfo();
+    swVar->Name    = "<switch>";
+    swVar->Depth   = m_ScopeDepth;
     swVar->Pointer = inputPtr;
     CurrentFunction()->Locals.push_back(swVar);
     EmitSetVariable(OP_ASSIGN, swVar, switchType);
@@ -1792,23 +1595,22 @@ void Compiler::SwitchAsIfElse() {
             }
 
             const Token &caseToken = LookBack();
-            ConstantInfo value = ParseNumericLiteral();
+            ConstantInfo value     = ParseNumericLiteral();
 
             // Check the type of the case label
             TypeCompatibility caseCompat = TypeInfo::CheckCompatibility(switchType, value.Type);
             if (caseCompat == tcCastFloatToSigned) {
-                value.ConstValue.Int = (int) value.ConstValue.Float;
-                value.Type = dtInt32;
+                value.ConstValue.Int = (int)value.ConstValue.Float;
+                value.Type           = dtInt32;
             } else if (caseCompat == tcCastSignedToFloat) {
-                value.ConstValue.Float = (float) value.ConstValue.Int;
-                value.Type = dtFloat;
+                value.ConstValue.Float = (float)value.ConstValue.Int;
+                value.Type             = dtFloat;
             }
 
             // Make sure it doesn't already exist
-            for (auto c: cases) {
+            for (auto c : cases) {
                 if (value.Type == c.Type && AS_INT32(value.ConstValue) == AS_INT32(c.ConstValue)) {
-                    AddError("case label '" + caseToken.Value + "' already exists.",
-                             caseToken);
+                    AddError("case label '" + caseToken.Value + "' already exists.", caseToken);
                 }
             }
             cases.push_back(value);
@@ -1825,7 +1627,7 @@ void Compiler::SwitchAsIfElse() {
         int skipJump = EmitJump(OP_JUMP);
 
         // Patch the case match jumps
-        for (auto jump: jumps) {
+        for (auto jump : jumps) {
             PatchJump(jump);
         }
 
@@ -1859,13 +1661,13 @@ void Compiler::SwitchAsIfElse() {
 // the break instruction.
 //
 // Returns the number of local variables that were eliminated.
-int Compiler::DiscardLocals(int depth) {
-    //ASSERT(m_ScopeDepth > -1, "Cannot exit top-level scope.");
+int Compiler::DiscardLocals(int depth)
+{
+    // ASSERT(m_ScopeDepth > -1, "Cannot exit top-level scope.");
 
-    int local = (int) (CurrentFunction()->Locals.size() - 1);
-    int pops = 0;
+    int local = (int)(CurrentFunction()->Locals.size() - 1);
+    int pops  = 0;
     while (local >= 0 && CurrentFunction()->Locals[local]->Depth >= depth) {
-
         // Call destructors on classes going out of scope
         VariableInfo *var = CurrentFunction()->Locals[local];
         // TODO: Check this is required/correct
@@ -1882,8 +1684,8 @@ int Compiler::DiscardLocals(int depth) {
     return pops;
 }
 
-void Compiler::BreakStatement() {
-
+void Compiler::BreakStatement()
+{
     ConsumeToken(tknSemiColon, -3, "Expected ';' after 'break'.");
 
     if (m_CurrentLoop == nullptr && m_CurrentSwitch == nullptr) {
@@ -1892,8 +1694,7 @@ void Compiler::BreakStatement() {
     }
 
     // Since we will be jumping out of the scope, make sure any locals in it are discarded first.
-    if ((m_CurrentLoop == nullptr) ||
-        (m_CurrentSwitch != nullptr && m_CurrentSwitch->ScopeDepth > m_CurrentLoop->ScopeDepth)) {
+    if ((m_CurrentLoop == nullptr) || (m_CurrentSwitch != nullptr && m_CurrentSwitch->ScopeDepth > m_CurrentLoop->ScopeDepth)) {
         DiscardLocals(m_CurrentSwitch->ScopeDepth + 1);
     } else {
         DiscardLocals(m_CurrentLoop->ScopeDepth + 1);
@@ -1905,8 +1706,8 @@ void Compiler::BreakStatement() {
     EmitJump(OP_BREAK);
 }
 
-void Compiler::ContinueStatement() {
-
+void Compiler::ContinueStatement()
+{
     ConsumeToken(tknSemiColon, -3, "Expected ';' after 'continue'.");
 
     if (m_CurrentLoop == nullptr) {
@@ -1922,26 +1723,24 @@ void Compiler::ContinueStatement() {
     EmitShortArg(OP_LOOP, loopOffset);
 }
 
-void Compiler::ExpressionStatement() {
-
+void Compiler::ExpressionStatement()
+{
     Expression();
     ConsumeToken(tknSemiColon, -2, "Expected ';' after expression.");
     EmitByte(OP_POP);
 }
 
-void Compiler::ScopeBegin() {
-
+void Compiler::ScopeBegin()
+{
     ++m_ScopeDepth;
 }
 
-void Compiler::ScopeEnd(bool pop) {
-
+void Compiler::ScopeEnd(bool pop)
+{
     --m_ScopeDepth;
 
     int popCount = 0;
-    while ((!CurrentFunction()->Locals.empty()) &&
-           (CurrentFunction()->Locals[CurrentFunction()->Locals.size() - 1]->Depth > m_ScopeDepth)) {
-
+    while ((!CurrentFunction()->Locals.empty()) && (CurrentFunction()->Locals[CurrentFunction()->Locals.size() - 1]->Depth > m_ScopeDepth)) {
         VariableInfo *var = CurrentFunction()->Locals.back();
         Destroy(var);
 
@@ -1955,8 +1754,8 @@ void Compiler::ScopeEnd(bool pop) {
 }
 
 /* Calls the destructor on the variable if applicable */
-void Compiler::Destroy(VariableInfo *variable) {
-
+void Compiler::Destroy(VariableInfo *variable)
+{
     if (variable == nullptr)
         return;
 
@@ -1972,10 +1771,10 @@ void Compiler::Destroy(VariableInfo *variable) {
     }
 }
 
-void Compiler::ClassDeclaration() {
-
-    Token token = ConsumeToken(tknIdentifier, -1, "Expected class name.");
-    string className = token.Value;
+void Compiler::ClassDeclaration()
+{
+    Token token           = ConsumeToken(tknIdentifier, -1, "Expected class name.");
+    std::string className = token.Value;
 
     if (ResolveClass(className) != nullptr) {
         AddError("class '" + className + "' already exists.", token);
@@ -1986,16 +1785,16 @@ void Compiler::ClassDeclaration() {
 
     ConsumeToken(tknLeftCurly, -2, "Expected '{' before class body.");
 
-    ScriptFunction *initFunc = CreateFunction("__" + klass->Name + "__Init", ftClassInit, dtVoid);
+    ScriptFunction *initFunc  = CreateFunction("__" + klass->Name + "__Init", ftClassInit, dtVoid);
     initFunc->IsParameterless = true;
-    klass->InitFunctionId = initFunc->Id;
+    klass->InitFunctionId     = initFunc->Id;
     initFunc->Args.emplace_back(dtPointer);
 
-    auto thisVar = new VariableInfo();
-    thisVar->Name = "this";
+    auto thisVar         = new VariableInfo();
+    thisVar->Name        = "this";
     thisVar->ParentClass = klass->Name;
-    thisVar->Depth = m_ScopeDepth;
-    thisVar->Pointer = VmPointer(CurrentFunction()->Locals.size(), dtPointer, scopeLocal);
+    thisVar->Depth       = m_ScopeDepth;
+    thisVar->Pointer     = VmPointer(CurrentFunction()->Locals.size(), dtPointer, scopeLocal);
     CurrentFunction()->Locals.push_back(thisVar);
 
     while (!Check(tknRightCurly) && !IsAtEnd()) {
@@ -2022,15 +1821,14 @@ void Compiler::ClassDeclaration() {
 
     EndFunction();
 
-
     ConsumeToken(tknRightCurly, -2, "Expected '}' after class body.");
 
     EndClass();
 }
 
-ClassInfo *Compiler::ResolveClass(const string &name) {
-
-    for (auto klass: m_Classes) {
+ClassInfo *Compiler::ResolveClass(const std::string &name)
+{
+    for (auto klass : m_Classes) {
         if (klass->Name == name)
             return klass;
     }
@@ -2038,13 +1836,13 @@ ClassInfo *Compiler::ResolveClass(const string &name) {
     return nullptr;
 }
 
-ClassInfo *Compiler::CreateClass(const string &name) {
-
-    auto *klass = new ClassInfo();
-    klass->Token = LookBack();
-    klass->Name = name;
-    klass->Id = (int) m_Classes.size();
-    klass->Enclosing = m_CurrentClass;
+ClassInfo *Compiler::CreateClass(const std::string &name)
+{
+    auto *klass             = new ClassInfo();
+    klass->Token            = LookBack();
+    klass->Name             = name;
+    klass->Id               = (int)m_Classes.size();
+    klass->Enclosing        = m_CurrentClass;
     klass->ParentFunctionId = CurrentFunction()->Id;
 
     m_Classes.push_back(klass);
@@ -2057,8 +1855,8 @@ ClassInfo *Compiler::CreateClass(const string &name) {
     return m_CurrentClass;
 }
 
-void Compiler::EndClass() {
-
+void Compiler::EndClass()
+{
     // Check the class has some members
     if (m_CurrentClass->Fields.empty()) {
         AddError("Class body must contain at least one field.", m_CurrentClass->Token);
@@ -2069,40 +1867,40 @@ void Compiler::EndClass() {
     m_CurrentClass = m_CurrentClass->Enclosing;
 }
 
-ClassInfo *Compiler::CurrentClass() {
-
+ClassInfo *Compiler::CurrentClass()
+{
     return m_CurrentClass;
 }
 
-void Compiler::ClassInstanceBegin(ClassInfo *classInstance) {
-
+void Compiler::ClassInstanceBegin(ClassInfo *classInstance)
+{
     classInstance->Enclosing = m_CurrentClassInstance;
-    m_CurrentClassInstance = classInstance;
+    m_CurrentClassInstance   = classInstance;
 }
 
-void Compiler::ClassInstanceEnd() {
-
+void Compiler::ClassInstanceEnd()
+{
     m_CurrentClassInstance = m_CurrentClassInstance->Enclosing;
 }
 
-ClassInfo *Compiler::CurrentClassInstance() {
-
+ClassInfo *Compiler::CurrentClassInstance()
+{
     return m_CurrentClassInstance;
 }
 
 /* When inside a class declaration, code emitted from within its parent function is considered
  * initialisation code of the class itself.
  */
-bool Compiler::InClassInitialiser() {
-
+bool Compiler::InClassInitialiser()
+{
     if (!CurrentClass() || CurrentClass()->InitFunctionId < 0)
         return false;
 
     return CurrentClass()->InitFunctionId == CurrentFunction()->Id;
 }
 
-bool Compiler::MatchClassInstance() {
-
+bool Compiler::MatchClassInstance()
+{
     if (!Check(tknIdentifier)) {
         return false;
     }
@@ -2115,11 +1913,11 @@ bool Compiler::MatchClassInstance() {
     return Match(tknIdentifier);
 }
 
-void Compiler::ClassInstanceDeclaration() {
-
-    const Token &token = LookBack();
-    string className = token.Value;
-    ClassInfo *klass = ResolveClass(className);
+void Compiler::ClassInstanceDeclaration()
+{
+    const Token &token    = LookBack();
+    std::string className = token.Value;
+    ClassInfo *klass      = ResolveClass(className);
     ClassInstanceBegin(klass);
     if (klass == nullptr) {
         AddError("class '" + className + "' has not been defined in this scope.", token);
@@ -2172,11 +1970,11 @@ void Compiler::ClassInstanceDeclaration() {
     ClassInstanceEnd();
 }
 
-void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
-
+void Compiler::ArrayDeclaration(DataType dataType, u32 flags)
+{
     flags |= vfArray;
     VariableInfo *arrayVar = ParseVariable(dataType, flags);
-    string name = arrayVar->Name;
+    std::string name       = arrayVar->Name;
     MarkInitialised(CurrentScope());
 
     if (arrayVar == nullptr) {
@@ -2185,8 +1983,8 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
 
     // Get the number of values that can be packed into a stack value.
     int packedValueCount = TypeInfo::GetPackedCount(arrayVar->Type());
-    int count = NOT_SET;
-    int initCount = NOT_SET;
+    int count            = NOT_SET;
+    int initCount        = NOT_SET;
 
     // Local only: Emit the array instruction to be patched with the array size
     // This pushes the local stack pointer to accommodate the array
@@ -2212,8 +2010,7 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
         do {
             if ((initCount > 0) && (initCount % packedValueCount == 0)) {
                 // Add a variable to the stack if we're past a pack size boundary
-                CreateVariable("__" + name + "__" + std::to_string(initCount), CurrentScope(), dataType,
-                                      vfNormal);
+                CreateVariable("__" + name + "__" + std::to_string(initCount), CurrentScope(), dataType, vfNormal);
             }
 
             // Find the array pointer again in case the vector has reallocated.
@@ -2232,12 +2029,9 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
             // Check the type is ok
             auto argCompat = arrayType.CheckCompatibleWith(exprType);
             if (argCompat == tcIncompatible) {
-                AddError("Value of type '" + DataTypeToString(dataType) + "' expected.",
-                         LookBack());
+                AddError("Value of type '" + DataTypeToString(dataType) + "' expected.", LookBack());
             } else if (argCompat != tcMatch) {
-                AddWarning("Value will be implicitly cast to type '"
-                           + DataTypeToString(dataType) + "'. Data may be lost.",
-                           LookBack());
+                AddWarning("Value will be implicitly cast to type '" + DataTypeToString(dataType) + "'. Data may be lost.", LookBack());
             }
 
             // Set the value
@@ -2268,14 +2062,13 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
             // Push the pointer to the start of the array onto the stack
             EmitAbsolutePointer(arrayVar);
 
-            VariableInfo *aVal = CreateVariable("__" + name + "__" + std::to_string(i),
-                                                CurrentScope(), dataType, vfNormal);
+            VariableInfo *aVal = CreateVariable("__" + name + "__" + std::to_string(i), CurrentScope(), dataType, vfNormal);
             if (aVal == nullptr) { // Check the return value of the CreateVariable function
                 AddError("Failed to create array value", LookBack());
             }
 
             EmitByte(OP_NIL);
-            EmitSetAtOffset( arrayVar->Type(), dtInt32);
+            EmitSetAtOffset(arrayVar->Type(), dtInt32);
             EmitPop();
         }
     }
@@ -2292,7 +2085,7 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
         return;
 
     // Calculate the size in terms of stack values
-    int size = (TypeInfo::GetByteSize(dataType) * count) / (int) sizeof(Value);
+    int size       = (TypeInfo::GetByteSize(dataType) * count) / (int)sizeof(Value);
     arrayVar->Size = size;
 
     // Local Only: Patch the array size.
@@ -2303,37 +2096,37 @@ void Compiler::ArrayDeclaration(DataType dataType, u32 flags) {
     ConsumeToken(tknSemiColon, -2, "Expected ';' after array declaration.");
 }
 
-void Compiler::FunctionDeclaration(DataType dataType) {
-
-    Token token = ConsumeToken(tknIdentifier, -2, "Expected method name.");
-    string funcName = token.Value;
+void Compiler::FunctionDeclaration(DataType dataType)
+{
+    Token token          = ConsumeToken(tknIdentifier, -2, "Expected method name.");
+    std::string funcName = token.Value;
     Function(funcName, ftFunction, dataType);
 }
 
-void Compiler::MethodDeclaration(DataType dataType) {
-
-    Token token = ConsumeToken(tknIdentifier, -2, "Expected method name.");
-    string methodName = "__" + CurrentClass()->Name + "__" + token.Value;
-    ScriptFunction *func = Function(methodName, ftClassMethod, dataType);
+void Compiler::MethodDeclaration(DataType dataType)
+{
+    Token token            = ConsumeToken(tknIdentifier, -2, "Expected method name.");
+    std::string methodName = "__" + CurrentClass()->Name + "__" + token.Value;
+    ScriptFunction *func   = Function(methodName, ftClassMethod, dataType);
     CurrentClass()->Methods.push_back(func->Name);
 }
 
-void Compiler::ConstructorDeclaration() {
-
+void Compiler::ConstructorDeclaration()
+{
     ScriptFunction *func = Function("__" + CurrentClass()->Name + "__Constructor", ftClassMethod, dtVoid);
     CurrentClass()->Methods.push_back(func->Name);
     CurrentClass()->ConstructorFunctionId = func->Id;
 }
 
-void Compiler::DestructorDeclaration() {
-
-    FunctionInfo *func = Function("__" + CurrentClass()->Name + "__Destructor", ftClassMethod, dtVoid);
+void Compiler::DestructorDeclaration()
+{
+    FunctionInfo *func    = Function("__" + CurrentClass()->Name + "__Destructor", ftClassMethod, dtVoid);
     func->IsParameterless = true;
     CurrentClass()->Methods.push_back(func->Name);
 }
 
-ScriptFunction *Compiler::Function(const string &name, FunctionType chunkType, DataType returnType) {
-
+ScriptFunction *Compiler::Function(const std::string &name, FunctionType chunkType, DataType returnType)
+{
     ScriptFunction *func = CreateFunction(name, chunkType, returnType);
 
     ScopeBegin();
@@ -2342,8 +2135,7 @@ ScriptFunction *Compiler::Function(const string &name, FunctionType chunkType, D
 
     // Insert the hidden 'this' argument for class methods
     if (chunkType == ftClassMethod) {
-        VariableInfo *thisVar = CreateVariable("this", scopeLocal, dtPointer,
-                                               (VariableFlags)(vfPointer | vfClass | vfConst));
+        VariableInfo *thisVar = CreateVariable("this", scopeLocal, dtPointer, (VariableFlags)(vfPointer | vfClass | vfConst));
         MarkInitialised(thisVar->Scope());
         CurrentFunction()->Args.push_back(thisVar->Type());
     }
@@ -2389,7 +2181,7 @@ ScriptFunction *Compiler::Function(const string &name, FunctionType chunkType, D
     ScopeEnd(false);
 
     // Add implicit return
-    ScriptFunction *scriptFunction = func->Type != ftNative ? (ScriptFunction *) func : nullptr;
+    ScriptFunction *scriptFunction = func->Type != ftNative ? (ScriptFunction *)func : nullptr;
     if (scriptFunction && !scriptFunction->ReturnSupplied) {
         if (scriptFunction->ReturnType == dtVoid) {
             EmitReturn();
@@ -2400,18 +2192,18 @@ ScriptFunction *Compiler::Function(const string &name, FunctionType chunkType, D
 
     uint32_t functionId = EndFunction();
     ConstantInfo funcConst{};
-    funcConst.Type = dtFunction;
+    funcConst.Type                   = dtFunction;
     funcConst.ConstValue.FuncPointer = functionId;
 
     AddConstant(funcConst); // No stack effect.
-    //EmitConstant(funcConst); // Pushes to stack.
+    // EmitConstant(funcConst); // Pushes to stack.
 
     return func;
 }
 
-void Compiler::NativeFunction(const Token &token) {
-
-    const string &name = token.Value;
+void Compiler::NativeFunction(const Token &token)
+{
+    const std::string &name    = token.Value;
     NativeFuncInfo *nativeFunc = ResolveNativeFunction(name);
     if (nativeFunc == nullptr) {
         AddError("Failed to resolve native function '" + name + "'.", token);
@@ -2419,7 +2211,7 @@ void Compiler::NativeFunction(const Token &token) {
     }
 
     ConstantInfo native{};
-    native.Type = dtNativeFunc;
+    native.Type                   = dtNativeFunc;
     native.ConstValue.FuncPointer = nativeFunc->Id;
 
     EmitConstant(native);
@@ -2429,15 +2221,15 @@ void Compiler::NativeFunction(const Token &token) {
     }
 }
 
-int Compiler::ArgumentList(FunctionInfo *func, VariableInfo *parentVar) {
-
+int Compiler::ArgumentList(FunctionInfo *func, VariableInfo *parentVar)
+{
     if (func == nullptr) {
         return 0;
     }
 
     int expectedArgCount = func->ArgCount();
-    int argCount = 0;
-    int hiddenArgs = 0;
+    int argCount         = 0;
+    int hiddenArgs       = 0;
 
     // Add the hidden 'this' argument for class methods
     if (func->Type == ftClassMethod) {
@@ -2450,7 +2242,6 @@ int Compiler::ArgumentList(FunctionInfo *func, VariableInfo *parentVar) {
             AddError("Can't call class method outside of class instance", LookBack());
         }
     }
-
 
     if (!func->IsParameterless && !Check(tknRightParen)) {
         do {
@@ -2469,11 +2260,10 @@ int Compiler::ArgumentList(FunctionInfo *func, VariableInfo *parentVar) {
 
             // Argument expression
             DataType exprType = Expression();
-            auto argCompat = argExpectingType.CheckCompatibleWith(exprType);
+            auto argCompat    = argExpectingType.CheckCompatibleWith(exprType);
 
             if (argCompat == tcIncompatible) {
-                AddError("Argument of type '" + DataTypeToString(func->Args.back()) + "' expected.",
-                         LookBack());
+                AddError("Argument of type '" + DataTypeToString(func->Args.back()) + "' expected.", LookBack());
             }
 
             // If required, cast the value on the stack to match the function input.
@@ -2490,20 +2280,17 @@ int Compiler::ArgumentList(FunctionInfo *func, VariableInfo *parentVar) {
     }
 
     if (argCount != func->ArgCount()) {
-        string fType = func->Type == ftClassMethod ? "Method" : "Function";
-        AddError(fType + " expects " + std::to_string(expectedArgCount) +
-                 " argument(s), but "
-                 + std::to_string(argCount) + " provided.",
-                 LookBack());
+        std::string fType = func->Type == ftClassMethod ? "Method" : "Function";
+        AddError(fType + " expects " + std::to_string(expectedArgCount) + " argument(s), but " + std::to_string(argCount) + " provided.", LookBack());
     }
 
     return argCount + hiddenArgs;
 }
 
-void Compiler::Call() {
-
-    Token token = LookBack(2);
-    string name = token.Value;
+void Compiler::Call()
+{
+    Token token      = LookBack(2);
+    std::string name = token.Value;
 
     FunctionInfo *func = FindFunction(name);
     if (func == nullptr) {
@@ -2523,11 +2310,11 @@ void Compiler::Call() {
 
     int argCount = ArgumentList(func, parentVar);
 
-    EmitBytes(func->Type == ftNative ? OP_CALL_NATIVE : OP_CALL, (u8) argCount);
+    EmitBytes(func->Type == ftNative ? OP_CALL_NATIVE : OP_CALL, (u8)argCount);
 }
 
-void Compiler::PointerIndex(bool canAssign) {
-
+void Compiler::PointerIndex(bool canAssign)
+{
     // '[' will already be consumed at this point
     DataType arrayType = CurrentType();
     if (arrayType == dtNone) {
@@ -2556,7 +2343,8 @@ void Compiler::PointerIndex(bool canAssign) {
     }
 }
 
-NativeFuncInfo *Compiler::ResolveNativeFunction(const string &name) {
+NativeFuncInfo *Compiler::ResolveNativeFunction(const std::string &name)
+{
     const auto nf = NativeFunctionMap.find(name);
     if (nf != NativeFunctionMap.end()) {
         // Tag the function name onto the result
@@ -2567,8 +2355,8 @@ NativeFuncInfo *Compiler::ResolveNativeFunction(const string &name) {
     return nullptr;
 }
 
-ScriptFunction *Compiler::ResolveMethod(const string &name, VariableInfo *parentVar) {
-
+ScriptFunction *Compiler::ResolveMethod(const std::string &name, VariableInfo *parentVar)
+{
     if (parentVar == nullptr)
         return nullptr;
 
@@ -2580,41 +2368,8 @@ ScriptFunction *Compiler::ResolveMethod(const string &name, VariableInfo *parent
     return nullptr;
 }
 
-bool Compiler::MatchTypeDeclaration(DataType &outDataType, u32 &outFlags) {
-
-    outFlags = vfNormal;
-
-    if (Match(tknConst)) {
-        outFlags |= vfConst;
-    }
-
-    if (Match(tknStar)) {
-        outFlags |= vfPointer;
-    }
-
-    if (Match(tknVoid)) outDataType = dtVoid;
-    else if (Match(tknBool)) outDataType = dtBool;
-    else if (Match(tknChar)) outDataType = dtInt8;
-    else if (Match(tknByte)) outDataType = dtUint8;
-    else if (Match(tknShort)) outDataType = dtInt16;
-    else if (Match(tknUShort)) outDataType = dtUint16;
-    else if (Match(tknInt)) outDataType = dtInt32;
-    else if (Match(tknUInt)) outDataType = dtUint32;
-    else if (Match(tknFloat)) outDataType = dtFloat;
-    else if (Match(tknString)) outDataType = dtString;
-    else if (MatchClassInstance()) outDataType = dtClass;
-    else {
-        outDataType = dtNone;
-        if (outFlags != vfNormal) {
-            AddError("Expected type initializer.", LookBack());
-        }
-    }
-
-    return (outDataType != dtNone);
-}
-
-void Compiler::VariableDeclaration(const DataType dataType, u32 flags) {
-
+void Compiler::VariableDeclaration(const DataType dataType, u32 flags)
+{
     TypeInfo varType(dataType);
     TypeBegin(&varType);
 
@@ -2626,10 +2381,9 @@ void Compiler::VariableDeclaration(const DataType dataType, u32 flags) {
     DataType inputType = dtNone;
     if (Match(tknAssign)) {
         Token exprToken = CurrentToken();
-        inputType = Expression();
+        inputType       = Expression();
         if (inputType != var->Type()) {
-            AddWarning("Expression will be implicitly cast to assignee type: "
-                        + DataTypeToString(var->Type()), exprToken);
+            AddWarning("Expression will be implicitly cast to assignee type: " + DataTypeToString(var->Type()), exprToken);
         }
     } else {
         EmitByte(OP_NIL);
@@ -2641,17 +2395,17 @@ void Compiler::VariableDeclaration(const DataType dataType, u32 flags) {
     TypeEnd();
 }
 
-VariableInfo *Compiler::ParseVariable(const DataType dataType, u32 flags, const string &errorMessage) {
-
-    Token token = ConsumeToken(tknIdentifier, -2, errorMessage);
+VariableInfo *Compiler::ParseVariable(const DataType dataType, u32 flags, const std::string &errorMessage)
+{
+    Token token       = ConsumeToken(tknIdentifier, -2, errorMessage);
     VariableInfo *var = DeclareVariable(dataType, flags);
-    var->Token = token;
+    var->Token        = token;
     return var;
 }
 
-VariableInfo *Compiler::AddGlobal(const Token &token, const DataType dataType, u32 flags) {
-
-    const string &name = token.Value;
+VariableInfo *Compiler::AddGlobal(const Token &token, const DataType dataType, u32 flags)
+{
+    const std::string &name = token.Value;
 
     // Check if it already exists
     if (ResolveNativeFunction(name) != nullptr) {
@@ -2669,14 +2423,14 @@ VariableInfo *Compiler::AddGlobal(const Token &token, const DataType dataType, u
     }
 
     VariableInfo *newGlobal = CreateVariable(name, scopeGlobal, dataType, flags);
-    newGlobal->Token = token;
+    newGlobal->Token        = token;
 
     return newGlobal;
 }
 
-VariableInfo *Compiler::AddLocal(const Token &token, const DataType dataType, u32 flags) {
-
-    const string &name = token.Value;
+VariableInfo *Compiler::AddLocal(const Token &token, const DataType dataType, u32 flags)
+{
+    const std::string &name = token.Value;
 
     // Check if it already exists
     if (ResolveNativeFunction(name) != nullptr) {
@@ -2694,7 +2448,7 @@ VariableInfo *Compiler::AddLocal(const Token &token, const DataType dataType, u3
     }
 
     VariableInfo *newLocal = CreateVariable(name, scopeLocal, dataType, flags);
-    newLocal->Token = token;
+    newLocal->Token        = token;
 
     // Record the max local height
     if (CurrentFunction()->Locals.size() > CurrentFunction()->LocalsMaxHeight) {
@@ -2704,14 +2458,14 @@ VariableInfo *Compiler::AddLocal(const Token &token, const DataType dataType, u3
     return newLocal;
 }
 
-VariableInfo *Compiler::AddMember(const Token &token, DataType dataType, u32 flags) {
-
+VariableInfo *Compiler::AddMember(const Token &token, DataType dataType, u32 flags)
+{
     if (CurrentClass() == nullptr) {
         AddError("Cannot add fields outside of a class.", token);
         return nullptr;
     }
 
-    const string &name = token.Value;
+    const std::string &name = token.Value;
 
     // Check if it already exists
     if (ResolveNativeFunction(name) != nullptr) {
@@ -2729,13 +2483,13 @@ VariableInfo *Compiler::AddMember(const Token &token, DataType dataType, u32 fla
     }
 
     VariableInfo *newMember = CreateVariable(name, CurrentScope(), dataType, (flags | vfField));
-    newMember->Token = token;
+    newMember->Token        = token;
 
     return newMember;
 }
 
-VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const string &className, const string &instanceName) {
-
+VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const std::string &className, const std::string &instanceName)
+{
     ClassInfo *classInfo = ResolveClass(className);
     if (classInfo == nullptr) {
         return nullptr;
@@ -2751,42 +2505,42 @@ VariableInfo *Compiler::AddClassMembers(VarScopeType scope, const string &classN
         return nullptr;
     }
 
-    int classAddress = (int) varVector->size();
+    int classAddress = (int)varVector->size();
 
-    for (auto m: classInfo->Fields) {
-        int address = (int) varVector->size();
+    for (auto m : classInfo->Fields) {
+        int address = (int)varVector->size();
         if (m->Type() == dtClass) {
             AddClassMembers(scope, m->ParentClass, m->Name);
         } else {
             varVector->push_back(m);
         }
-        VariableInfo *member = varVector->back();
-        member->ParentInstance = instanceName;
-        member->ParentAddress = classAddress;
+        VariableInfo *member    = varVector->back();
+        member->ParentInstance  = instanceName;
+        member->ParentAddress   = classAddress;
         member->Pointer.Address = address;
-        member->Pointer.Scope = scope;
-        member->Depth = m_ScopeDepth; // Class members get initialised by the class init function.
+        member->Pointer.Scope   = scope;
+        member->Depth           = m_ScopeDepth; // Class members get initialised by the class init function.
     }
 
     return varVector->at(classAddress);
 }
 
-VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, DataType dataType, u32 flags) {
-
-    auto *var = new VariableInfo();
+VariableInfo *Compiler::CreateVariable(const std::string &name, VarScopeType scope, DataType dataType, u32 flags)
+{
+    auto *var    = new VariableInfo();
     var->Pointer = VmPointer(0xFFFF, dataType, scope);
-    var->Name = name;
-    var->Flags = flags;
+    var->Name    = name;
+    var->Flags   = flags;
     if (dataType == dtClass) {
         var->MemberIndex = 0;
     }
     if (InClassInitialiser()) {
         var->ParentClass = CurrentClass()->Name;
-        var->Size = 1;
-        var->MemberIndex = (int) CurrentClass()->Fields.size();
+        var->Size        = 1;
+        var->MemberIndex = (int)CurrentClass()->Fields.size();
     } else if (CurrentClassInstance()) {
         var->ParentClass = CurrentClassInstance()->Name;
-        var->Size = CurrentClassInstance()->Size(); // ?
+        var->Size        = CurrentClassInstance()->Size(); // ?
     } else {
         var->Size = 1;
     }
@@ -2811,7 +2565,7 @@ VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, D
 
     // Add class members to the memory stack
     if (dataType == dtClass && CurrentClassInstance()) {
-        delete(var); // TODO: Improve this
+        delete (var); // TODO: Improve this
         newVar = AddClassMembers(scope, CurrentClassInstance()->Name, name);
     } else {
         var->Pointer.Address = varVector->size();
@@ -2822,9 +2576,9 @@ VariableInfo *Compiler::CreateVariable(const string &name, VarScopeType scope, D
     return newVar;
 }
 
-VariableInfo *Compiler::ResolveGlobal(const string &name, const string &parent) {
-
-    for (int i = (int) (m_Globals.size() - 1); i >= 0; --i) {
+VariableInfo *Compiler::ResolveGlobal(const std::string &name, const std::string &parent)
+{
+    for (int i = (int)(m_Globals.size() - 1); i >= 0; --i) {
         VariableInfo *var = m_Globals[i];
         if (var->Match(name, parent) || var->IsHeadMemberOf(name)) {
             if (var->Depth == NOT_SET) {
@@ -2837,9 +2591,9 @@ VariableInfo *Compiler::ResolveGlobal(const string &name, const string &parent) 
     return nullptr;
 }
 
-VariableInfo *Compiler::ResolveLocal(const string &name, const string &parent) {
-
-    for (int i = (int) (CurrentFunction()->Locals.size() - 1); i >= 0; --i) {
+VariableInfo *Compiler::ResolveLocal(const std::string &name, const std::string &parent)
+{
+    for (int i = (int)(CurrentFunction()->Locals.size() - 1); i >= 0; --i) {
         VariableInfo *var = CurrentFunction()->Locals[i];
         if (var->Match(name, parent) || var->IsHeadMemberOf(name)) {
             if (var->Depth == NOT_SET) {
@@ -2852,13 +2606,13 @@ VariableInfo *Compiler::ResolveLocal(const string &name, const string &parent) {
     return nullptr;
 }
 
-VariableInfo *Compiler::ResolveMember(ClassInfo *parentClass, const string &name) {
-
+VariableInfo *Compiler::ResolveMember(ClassInfo *parentClass, const std::string &name)
+{
     if (parentClass == nullptr) {
         return nullptr;
     }
 
-    for (int i = (int) (parentClass->Fields.size() - 1); i >= 0; --i) {
+    for (int i = (int)(parentClass->Fields.size() - 1); i >= 0; --i) {
         VariableInfo *var = parentClass->Fields[i];
         if (var->Name == name) {
             if (var->Depth == NOT_SET) {
@@ -2871,8 +2625,8 @@ VariableInfo *Compiler::ResolveMember(ClassInfo *parentClass, const string &name
     return nullptr;
 }
 
-VariableInfo *Compiler::ResolveVariable(const string &name, const string &parentInstance) {
-
+VariableInfo *Compiler::ResolveVariable(const std::string &name, const std::string &parentInstance)
+{
     VariableInfo *var = nullptr;
 
     // When compiling a class declaration we want to find its fields
@@ -2902,8 +2656,8 @@ VariableInfo *Compiler::ResolveVariable(const string &name, const string &parent
     return var;
 }
 
-VariableInfo *Compiler::DeclareVariable(const DataType dataType, u32 flags) {
-
+VariableInfo *Compiler::DeclareVariable(const DataType dataType, u32 flags)
+{
     Token token = LookBack();
 
     if (InClassInitialiser()) {
@@ -2921,8 +2675,8 @@ VariableInfo *Compiler::DeclareVariable(const DataType dataType, u32 flags) {
     }
 }
 
-void Compiler::DefineVariable(VariableInfo *variable, DataType inputType) {
-
+void Compiler::DefineVariable(VariableInfo *variable, DataType inputType)
+{
     if (variable == nullptr)
         return;
 
@@ -2936,8 +2690,8 @@ void Compiler::DefineVariable(VariableInfo *variable, DataType inputType) {
     }
 }
 
-void Compiler::MarkInitialised(VarScopeType scope) {
-
+void Compiler::MarkInitialised(VarScopeType scope)
+{
     if (InClassInitialiser()) {
         VariableInfo *memberVar = CurrentClass()->Fields.back();
         if (memberVar->Depth == NOT_SET)
@@ -2948,12 +2702,12 @@ void Compiler::MarkInitialised(VarScopeType scope) {
             globalVar->Depth = 0;
     } else {
         VariableInfo *localVar = CurrentFunction()->Locals.back();
-        localVar->Depth = m_ScopeDepth;
+        localVar->Depth        = m_ScopeDepth;
     }
 }
 
-bool Compiler::MatchAssignment(TokenType &outAssignToken) {
-
+bool Compiler::MatchAssignment(TokenType &outAssignToken)
+{
     const Token &token = CurrentToken();
 
     switch (token.TokenType) {
@@ -2972,8 +2726,8 @@ bool Compiler::MatchAssignment(TokenType &outAssignToken) {
     }
 }
 
-void Compiler::AssignVariable(VariableInfo *variable, TokenType assignToken) {
-
+void Compiler::AssignVariable(VariableInfo *variable, TokenType assignToken)
+{
     if (variable == nullptr) {
         AddError("Failed to resolve variable.", LookBack());
         return;
@@ -2991,8 +2745,8 @@ void Compiler::AssignVariable(VariableInfo *variable, TokenType assignToken) {
     EmitSetVariable(OP_ASSIGN, variable, exprType);
 }
 
-void Compiler::AssignArrayIndex(DataType arrayType, TokenType assignToken) {
-
+void Compiler::AssignArrayIndex(DataType arrayType, TokenType assignToken)
+{
     DataType exprType = CurrentType();
     if (assignToken == tknAssign) {
         exprType = Expression();
@@ -3013,9 +2767,9 @@ void Compiler::AssignArrayIndex(DataType arrayType, TokenType assignToken) {
     EmitSetAtOffset(arrayType, exprType);
 }
 
-void Compiler::NamedVariable(const Token &token, bool canAssign) {
-
-    string name = token.Value;
+void Compiler::NamedVariable(const Token &token, bool canAssign)
+{
+    std::string name = token.Value;
 
     VariableInfo *variable = ResolveVariable(name);
     if (variable == nullptr) {
@@ -3025,7 +2779,7 @@ void Compiler::NamedVariable(const Token &token, bool canAssign) {
     // Check for dot operator
     while (variable && variable->IsClassHead() && Match(tknDot)) {
         const Token &memberToken = ConsumeToken(tknIdentifier, -2, "Expected identifier after '.'.");
-        string memberName = memberToken.Value;
+        std::string memberName   = memberToken.Value;
 
         if (CheckMethod(memberToken, variable)) {
             NamedMethod(memberToken, variable);
@@ -3066,8 +2820,8 @@ void Compiler::NamedVariable(const Token &token, bool canAssign) {
     TypeEnd();
 }
 
-void Compiler::NamedFunction(const Token &token) {
-
+void Compiler::NamedFunction(const Token &token)
+{
     ConsumeToken(tknLeftParen, -2, "Expected '(' after function name");
 
     ScriptFunction *func = FindScriptFunction(token.Value);
@@ -3075,11 +2829,11 @@ void Compiler::NamedFunction(const Token &token) {
     EmitCallDirect(func, nullptr);
 }
 
-void Compiler::NamedMethod(const Token &token, VariableInfo *parentVar) {
-
+void Compiler::NamedMethod(const Token &token, VariableInfo *parentVar)
+{
     ConsumeToken(tknLeftParen, -2, "Expected '(' after method name");
 
-    string name = token.Value;
+    std::string name = token.Value;
 
     if (parentVar == nullptr) {
         AddError("Parent of '" + name + "' not found.", token);
@@ -3103,8 +2857,8 @@ void Compiler::EmitPointer(const Pointer &pointer, u16 offset) {
 }
 */
 
-void Compiler::EmitGetVariable(VariableInfo *variable, DataType outputType) {
-
+void Compiler::EmitGetVariable(VariableInfo *variable, DataType outputType)
+{
     if (variable == nullptr)
         return;
 
@@ -3123,8 +2877,8 @@ void Compiler::EmitGetVariable(VariableInfo *variable, DataType outputType) {
     EmitCast(cast);
 }
 
-void Compiler::EmitSetVariable(opCode_t opAssign, VariableInfo *variable, DataType inputType) {
-
+void Compiler::EmitSetVariable(opCode_t opAssign, VariableInfo *variable, DataType inputType)
+{
     if (variable == nullptr)
         return;
 
@@ -3151,19 +2905,19 @@ void Compiler::EmitSetVariable(opCode_t opAssign, VariableInfo *variable, DataTy
 /*
  * Creates a const value (if required) for the variable pointer and pushes it onto the stack.
  */
-void Compiler::EmitPointer(VariableInfo *variable, bool isMember) {
-
+void Compiler::EmitPointer(VariableInfo *variable, bool isMember)
+{
     Value pointer;
     pointer.Pointer = variable->Pointer;
     if (isMember) { // TODO: Check
-        pointer.Pointer.Scope = scopeField;
+        pointer.Pointer.Scope   = scopeField;
         pointer.Pointer.Address = variable->MemberIndex;
     }
-    EmitConstant({dtPointer, pointer});
+    EmitConstant({ dtPointer, pointer });
 }
 
-void Compiler::EmitAbsolutePointer(VariableInfo *variable) {
-
+void Compiler::EmitAbsolutePointer(VariableInfo *variable)
+{
     EmitPointer(variable);
     EmitByte(OP_ABSOLUTE_POINTER);
 }
@@ -3173,8 +2927,8 @@ void Compiler::EmitAbsolutePointer(VariableInfo *variable) {
  * Casts the output type if required.
  * Stack Before = ...[pointer][offset]
  */
-void Compiler::EmitGetFromOffset(DataType dataType, DataType outputType) {
-
+void Compiler::EmitGetFromOffset(DataType dataType, DataType outputType)
+{
     TypeCompatibility cast = TypeInfo::CheckCompatibility(outputType, dataType);
 
     switch (dataType) {
@@ -3212,8 +2966,8 @@ void Compiler::EmitGetFromOffset(DataType dataType, DataType outputType) {
  * Sets a value at an offset from a pointer.
  * Stack = ...[pointer][offset][value]
  */
-void Compiler::EmitSetAtOffset(DataType dataType, DataType inputType) {
-
+void Compiler::EmitSetAtOffset(DataType dataType, DataType inputType)
+{
     TypeCompatibility cast = TypeInfo::CheckCompatibility(dataType, inputType);
     EmitCast(cast);
 
@@ -3246,8 +3000,8 @@ void Compiler::EmitSetAtOffset(DataType dataType, DataType inputType) {
  * Casts the value on top of the stack to a different type.
  * Previous causes the stack top -1 value to be cast.
  * */
-void Compiler::EmitCast(TypeCompatibility castMode, bool previous) {
-
+void Compiler::EmitCast(TypeCompatibility castMode, bool previous)
+{
     switch (castMode) {
         case tcCastSignedToFloat:
             EmitByte(previous ? OP_CAST_PREV_INT_TO_FLOAT : OP_CAST_INT_TO_FLOAT);
@@ -3260,28 +3014,28 @@ void Compiler::EmitCast(TypeCompatibility castMode, bool previous) {
     }
 }
 
-int Compiler::EmitArray() {
-
+int Compiler::EmitArray()
+{
     EmitShortArg(OP_ARRAY, 0xFFFF);
 
     return CURRENT_CODE_POS - 2;
 }
 
-void Compiler::PatchArray(int offset, int size) {
-
-    CurrentFunction()->Code[offset] = mByte0(size);
+void Compiler::PatchArray(int offset, int size)
+{
+    CurrentFunction()->Code[offset]     = mByte0(size);
     CurrentFunction()->Code[offset + 1] = mByte1(size);
 }
 
-int Compiler::EmitJump(opCode_t jumpOp) {
-
+int Compiler::EmitJump(opCode_t jumpOp)
+{
     EmitShortArg(jumpOp, 0xFFFF);
 
     return CURRENT_CODE_POS - 2;
 }
 
-void Compiler::PatchJump(int offset) {
-
+void Compiler::PatchJump(int offset)
+{
     if (CurrentFunction()->Code[offset] != 0xFF && CurrentFunction()->Code[offset + 1] != 0xFF) {
         // Jump has already been patched
         return;
@@ -3294,31 +3048,32 @@ void Compiler::PatchJump(int offset) {
         AddError("Too much code to jump over.", LookBack());
     }
 
-    CurrentFunction()->Code[offset] = mByte0(jump);
+    CurrentFunction()->Code[offset]     = mByte0(jump);
     CurrentFunction()->Code[offset + 1] = mByte1(jump);
 }
 
-void Compiler::EmitLoop(int loopStart) {
-
+void Compiler::EmitLoop(int loopStart)
+{
     EmitByte(OP_LOOP);
 
     int offset = CURRENT_CODE_POS - loopStart + 2;
-    if (offset > UINT16_MAX) AddError("Loop body too large.", LookBack());
+    if (offset > UINT16_MAX)
+        AddError("Loop body too large.", LookBack());
 
     EmitByte(mByte0(offset));
     EmitByte(mByte1(offset));
 
-    //MSG_V("Loop @ " + std::to_string(CURRENT_CODE_POS - 3) + " = " + std::to_string(offset));
+    // MSG_V("Loop @ " + std::to_string(CURRENT_CODE_POS - 3) + " = " + std::to_string(offset));
 }
 
-void Compiler::EmitCall(opCode_t callOp, int argsCount) {
-
+void Compiler::EmitCall(opCode_t callOp, int argsCount)
+{
     EmitByte(callOp);
-    EmitByte((u8) argsCount);
+    EmitByte((u8)argsCount);
 }
 
-void Compiler::EmitCallDirect(ScriptFunction *function, VariableInfo *parentVar) {
-
+void Compiler::EmitCallDirect(ScriptFunction *function, VariableInfo *parentVar)
+{
     // Store the stack frame
     EmitByte(OP_FRAME);
 
@@ -3330,16 +3085,16 @@ void Compiler::EmitCallDirect(ScriptFunction *function, VariableInfo *parentVar)
     EmitCall(OP_CALL, argCount);
 }
 
-void Compiler::EmitReturn() {
-
+void Compiler::EmitReturn()
+{
     EmitByte(OP_NIL);
     EmitByte(OP_RETURN);
 }
 
-u32 Compiler::GetCodeSize() {
-
+u32 Compiler::GetCodeSize()
+{
     u32 size = 0;
-    for (auto &func: m_Functions) {
+    for (auto &func : m_Functions) {
         if (func == nullptr)
             continue;
 
@@ -3349,9 +3104,10 @@ u32 Compiler::GetCodeSize() {
     return size;
 }
 
-void Compiler::SanityCheck() {
+void Compiler::SanityCheck()
+{
     // TODO: Check for unused variables
-    for(auto &var : m_Globals) {
+    for (auto &var : m_Globals) {
         if (var->Name.starts_with("__") && var->Name.ends_with("__")) {
             continue;
         }
@@ -3365,36 +3121,36 @@ void Compiler::SanityCheck() {
     }
 }
 
-u32 Compiler::CodeSizeInBytes() {
-
+u32 Compiler::CodeSizeInBytes()
+{
     return (GetCodeSize() * sizeof(opCode_t));
 }
 
-u32 Compiler::ConstantsSizeInBytes() {
-
+u32 Compiler::ConstantsSizeInBytes()
+{
     return (m_ConstValues.size() * sizeof(Value));
 }
 
-u32 Compiler::StringsSizeInBytes() {
-
+u32 Compiler::StringsSizeInBytes()
+{
     return 0;
 }
 
-u32 Compiler::GlobalsSizeInBytes() {
-
+u32 Compiler::GlobalsSizeInBytes()
+{
     return (m_Globals.size() * sizeof(Value));
 }
 
-void Compiler::GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds) {
-
+void Compiler::GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds)
+{
     // Define the start date (January 1, 2000)
     std::tm startDate = {};
-    startDate.tm_year = 2000 - 1900;  // tm_year is years since 1900
-    startDate.tm_mon = 0;  // January is month 0
-    startDate.tm_mday = 1;  // Day of the month
+    startDate.tm_year = 2000 - 1900; // tm_year is years since 1900
+    startDate.tm_mon  = 0;           // January is month 0
+    startDate.tm_mday = 1;           // Day of the month
 
     // Get the time point corresponding to that start date
-    const std::time_t startTime = std::mktime(&startDate);
+    const std::time_t startTime                            = std::mktime(&startDate);
     const std::chrono::system_clock::time_point startPoint = std::chrono::system_clock::from_time_t(startTime);
 
     // Get the current time
@@ -3405,32 +3161,38 @@ void Compiler::GetBuildTimeStamp(uint16_t &outDays, uint16_t &outSeconds) {
 
     // Get the local time
     const std::time_t nowTime = std::chrono::system_clock::to_time_t(now);
-    const std::tm* localTime = std::localtime(&nowTime);
+    std::tm localTime         = {};
+#ifdef _WIN32
+    localtime_s(&localTime, &nowTime);
+#else
+    localTime = *std::localtime(&nowTime);
+#endif
 
     // Create a time struct representing today's date at midnight (00:00:00)
-    std::tm midnight = *localTime;  // Copy the current time
+    std::tm midnight = localTime; // Copy the current time
     midnight.tm_hour = 0;
-    midnight.tm_min = 0;
-    midnight.tm_sec = 0;
+    midnight.tm_min  = 0;
+    midnight.tm_sec  = 0;
 
     // Convert midnight to a time_point
     const std::time_t midnightTime = std::mktime(&midnight);
-    const auto midnightPoint = std::chrono::system_clock::from_time_t(midnightTime);
+    const auto midnightPoint       = std::chrono::system_clock::from_time_t(midnightTime);
 
     // Calculate the seconds since midnight
     const auto secondsSinceMidnight = std::chrono::duration_cast<std::chrono::seconds>(now - midnightPoint).count();
 
-    outDays = static_cast<uint16_t>(days);
+    outDays    = static_cast<uint16_t>(days);
     outSeconds = static_cast<uint16_t>(secondsSinceMidnight / 2);
 }
 
 /* Updates the function pointers to their actual position in the byte code output. */
-bool Compiler::PatchFunctionOffset(const string &name, funcPtr_t functionId, u32 offset) {
+bool Compiler::PatchFunctionOffset(const std::string &name, funcPtr_t functionId, u32 offset)
+{
     // Top level function doesn't need changing
     if (name.empty())
         return true;
 
-    for (auto &cv: m_ConstValues) {
+    for (auto &cv : m_ConstValues) {
         if (cv.Type == dtFunction && cv.ConstValue.FuncPointer == functionId) {
             cv.ConstValue.FuncPointer = offset;
             return true;
@@ -3440,14 +3202,14 @@ bool Compiler::PatchFunctionOffset(const string &name, funcPtr_t functionId, u32
     return false;
 }
 
-StatusCode Compiler::WriteBinaryFile(const string &filePath) {
-
-#define WRITE_BYTE(data)    fileBytes.push_back(data)
-#define FILE_POS            fileBytes.size()
-#define PADD_BYTES \
-while(FILE_POS % 4 > 0) { \
-    fileBytes.push_back(0x00); \
-}
+StatusCode Compiler::WriteBinaryFile(const std::string &filePath)
+{
+#define WRITE_BYTE(data) fileBytes.push_back(data)
+#define FILE_POS         fileBytes.size()
+#define PADD_BYTES                 \
+    while (FILE_POS % 4 > 0) {     \
+        fileBytes.push_back(0x00); \
+    }
 
     uint16_t buildDay;
     uint16_t buildSeconds;
@@ -3455,24 +3217,24 @@ while(FILE_POS % 4 > 0) { \
 
     // Write Header
     ScriptBinaryHeader header{
-            .HeaderSize = sizeof(ScriptBinaryHeader),
-            .Flags = m_Flags,
-            .LangVersionMajor = LANG_VERSION_MAJOR,
-            .LangVersionMinor = LANG_VERSION_MINOR,
-            .BuildDay = buildDay,
-            .BuildTime = buildSeconds,
-            .CodePos = 0,
-            .ConstantsPos = 0,
-            .StringsPos = 0,
-            .GlobalsSize = GlobalsSizeInBytes(),
-            .TotalSize = 0,
-            .CheckSum = 0 // Gets patched at the end
+        .HeaderSize       = sizeof(ScriptBinaryHeader),
+        .Flags            = m_Flags,
+        .LangVersionMajor = LANG_VERSION_MAJOR,
+        .LangVersionMinor = LANG_VERSION_MINOR,
+        .BuildDay         = buildDay,
+        .BuildTime        = buildSeconds,
+        .CodePos          = 0,
+        .ConstantsPos     = 0,
+        .StringsPos       = 0,
+        .GlobalsSize      = GlobalsSizeInBytes(),
+        .TotalSize        = 0,
+        .CheckSum         = 0 // Gets patched at the end
     };
 
     std::vector<uint8_t> fileBytes;
     fileBytes.reserve(header.HeaderSize + header.CodePos + header.ConstantsPos + header.StringsPos + 64);
 
-    auto *headerBytes = (uint8_t *) &header;
+    auto *headerBytes = (uint8_t *)&header;
     for (uint32_t i = 0; i < sizeof(ScriptBinaryHeader); ++i) {
         WRITE_BYTE(headerBytes[i]);
     }
@@ -3480,8 +3242,8 @@ while(FILE_POS % 4 > 0) { \
     // Write Byte Code
     PADD_BYTES
     u32 codeStart = FILE_POS;
-    std::map<funcPtr_t, string> functionsMap;
-    for (auto func: m_Functions) {
+    std::map<funcPtr_t, std::string> functionsMap;
+    for (auto func : m_Functions) {
         if (func == nullptr)
             continue;
 
@@ -3498,22 +3260,22 @@ while(FILE_POS % 4 > 0) { \
         // Function header (skipped for top level)
         if (!func->Name.empty()) {
             WRITE_BYTE(OP_FUNCTION_START);
-            WRITE_BYTE((uint8_t) func->ReturnType);
-            WRITE_BYTE((uint8_t) func->TotalArgCount());
+            WRITE_BYTE((uint8_t)func->ReturnType);
+            WRITE_BYTE((uint8_t)func->TotalArgCount());
         }
 
         // Write function code
-        for (auto &code: func->Code) {
-            WRITE_BYTE((uint8_t) code);
+        for (auto &code : func->Code) {
+            WRITE_BYTE((uint8_t)code);
         }
     }
 
     // Write Constants Code
     PADD_BYTES
-    u32 codeSize = FILE_POS - codeStart;
+    u32 codeSize       = FILE_POS - codeStart;
     u32 constantsStart = FILE_POS;
-    for (auto &constVal: m_ConstValues) {
-        auto *bytes = (uint8_t *) &constVal.ConstValue;
+    for (auto &constVal : m_ConstValues) {
+        auto *bytes = (uint8_t *)&constVal.ConstValue;
         for (size_t b = 0; b < sizeof(Value); b++) {
             WRITE_BYTE(bytes[b]);
         }
@@ -3522,9 +3284,9 @@ while(FILE_POS % 4 > 0) { \
     // Write Strings Code
     PADD_BYTES
     u32 constantsSize = FILE_POS - constantsStart;
-    u32 stringsStart = FILE_POS;
-    for (auto &c: m_StringData) {
-        WRITE_BYTE((uint8_t) c);
+    u32 stringsStart  = FILE_POS;
+    for (auto &c : m_StringData) {
+        WRITE_BYTE((uint8_t)c);
     }
     u32 stringsSize = FILE_POS - stringsStart;
 
@@ -3534,13 +3296,13 @@ while(FILE_POS % 4 > 0) { \
     u32 totalSize = FILE_POS;
 
     // Patch the start positions and checksum value
-    u32 checksum = Checksum::Calculate((fileBytes.data() + codeStart), fileBytes.size() - codeStart);
-    auto *fileHeader = (ScriptBinaryHeader *) (fileBytes.data());
-    fileHeader->CheckSum = checksum;
-    fileHeader->CodePos = codeStart;
+    u32 checksum             = Checksum::Calculate((fileBytes.data() + codeStart), fileBytes.size() - codeStart);
+    auto *fileHeader         = (ScriptBinaryHeader *)(fileBytes.data());
+    fileHeader->CheckSum     = checksum;
+    fileHeader->CodePos      = codeStart;
     fileHeader->ConstantsPos = constantsStart;
-    fileHeader->StringsPos = stringsStart;
-    fileHeader->TotalSize = totalSize;
+    fileHeader->StringsPos   = stringsStart;
+    fileHeader->TotalSize    = totalSize;
 
     // Write the final binary file output
     std::ofstream outFile;
@@ -3548,7 +3310,7 @@ while(FILE_POS % 4 > 0) { \
     if (!outFile.is_open()) {
         return SetResult(errFileError, "Error writing file: " + filePath);
     }
-    for (const auto &byte: fileBytes) {
+    for (const auto &byte : fileBytes) {
         outFile << byte;
     }
     outFile.close();
@@ -3560,48 +3322,45 @@ while(FILE_POS % 4 > 0) { \
     // TODO: Debug file output
 
     return SetResult(stsBinaryFileDone,
-                     "Binary file written: " + filePath + "\n" +
-                     "Header:         " + std::to_string(header.HeaderSize) + " bytes\n" +
-                     "Code:           " + std::to_string(codeSize) + " bytes\n" +
-                     "Constants:      " + std::to_string(constantsSize) + " bytes\n" +
-                     "Strings:        " + std::to_string(stringsSize) + " bytes\n" +
-                     "Globals:        " + std::to_string(header.GlobalsSize) + " bytes\n" +
-                     "Total:          " + std::to_string(totalSize) + " bytes\n" +
-                     "Min Slots Size: " + std::to_string((m_LocalsMax * sizeof(Value))) + " bytes\n\r"
-    );
+                     "Binary file written: " + filePath + "\n" + "Header:         " + std::to_string(header.HeaderSize) + " bytes\n" +
+                         "Code:           " + std::to_string(codeSize) + " bytes\n" + "Constants:      " + std::to_string(constantsSize) + " bytes\n" +
+                         "Strings:        " + std::to_string(stringsSize) + " bytes\n" + "Globals:        " + std::to_string(header.GlobalsSize) + " bytes\n" +
+                         "Total:          " + std::to_string(totalSize) + " bytes\n" + "Min Slots Size: " + std::to_string((m_LocalsMax * sizeof(Value))) +
+                         " bytes\n\r");
 
 #undef WRITE_BYTE
 #undef FILE_POS
 #undef PADD_BYTES
 }
 
-void Compiler::Cleanup() {
+void Compiler::Cleanup()
+{
     // Functions
     for (const auto func : m_Functions) {
-        delete(func);
+        delete (func);
     }
     m_Functions.clear();
 
     // Classes
     for (const auto klass : m_Classes) {
-        delete(klass);
+        delete (klass);
     }
     m_Classes.clear();
 
     // Variables
     for (const auto global : m_Globals) {
-        delete(global);
+        delete (global);
     }
     for (const auto shared : m_SharedGlobals) {
-        delete(shared);
+        delete (shared);
     }
 
     m_ConstValues.clear();
     m_ConstStrings.clear();
 }
 
-string Compiler::DataTypeToString(const DataType dataType) {
-
+std::string Compiler::DataTypeToString(const DataType dataType)
+{
     switch (dataType) {
         case dtNone:
             return "none";

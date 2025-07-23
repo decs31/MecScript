@@ -7,36 +7,35 @@
 #include <string>
 #include <vector>
 
-#define USE_SWITCH_RANGES
-
-using string = std::string;
+#ifndef USE_SWITCH_RANGES
+#define USE_SWITCH_RANGES (0)
+#endif // USE_SWITCH_RANGES
 
 class Lexer : public MecScriptBase
 {
-public:
-	explicit Lexer(ErrorHandler *errorHandler, const string &script);
-	~Lexer();
+  public:
+    explicit Lexer(ErrorHandler *errorHandler, const std::string &script);
+    ~Lexer();
 
     StatusCode Tokenize();
     const std::vector<Token> &Tokens() const;
     [[nodiscard]] StatusCode Status() const;
     [[nodiscard]] size_t ScriptLength() const;
-    string Message();
+    std::string Message();
     [[nodiscard]] size_t LineNum() const;
     [[nodiscard]] size_t LinePos() const;
-    string CurrentLine();
+    std::string CurrentLine();
 
-    static string TokenTypeToValue(TokenType tokenType);
+    static std::string TokenTypeToValue(TokenType tokenType);
 
-private:
-
+  private:
     std::string_view m_Script;
-    size_t m_Pos = 0;
-    size_t m_LineNum = 1;
+    size_t m_Pos       = 0;
+    size_t m_LineNum   = 1;
     size_t m_LineStart = 0;
     std::vector<Token> m_Tokens;
 
-    string m_ErrorMsg;
+    std::string m_ErrorMsg;
 
     StatusCode ProcessNextToken();
     [[nodiscard]] Token CurrentToken() const;
@@ -54,9 +53,9 @@ private:
 
     static void ImproveTokenType(Token &token);
 
-    void AddError(string message);
+    void AddError(std::string message);
 
-    StatusCode SetResult(StatusCode status, string message);
+    StatusCode SetResult(StatusCode status, std::string message);
 };
 
 #endif // !LEXER_H_

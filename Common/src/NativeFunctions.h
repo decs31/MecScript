@@ -6,8 +6,9 @@
 #define NATIVEFUNCTIONS_H
 
 #include "BasicTypes.h"
-#include "Value.h"
 #include "ScriptInfo.h"
+#include "Value.h"
+
 
 enum NativeFuncId : u8 {
     nfNull = 0,
@@ -34,4 +35,4 @@ enum NativeFuncId : u8 {
 typedef Value (*NativeFunc)(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args);
 typedef NativeFunc (*ResolverFunction)(const NativeFuncId funcId, const u8 argCount);
 
-#endif //NATIVEFUNCTIONS_H
+#endif // NATIVEFUNCTIONS_H

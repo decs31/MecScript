@@ -5,12 +5,12 @@
 #include "ErrorHandler.h"
 #include "Console.h"
 
-ErrorHandler::ErrorHandler(const string &script)
+ErrorHandler::ErrorHandler(const std::string &script)
 {
     SetScript(script);
 }
 
-void ErrorHandler::SetScript(const string &script)
+void ErrorHandler::SetScript(const std::string &script)
 {
     m_Script = script;
 }
@@ -64,7 +64,7 @@ bool ErrorHandler::ErrorsOverwater()
     return m_Errors.size() >= Watermark;
 }
 
-string ErrorHandler::GetLine(size_t lineNum)
+std::string ErrorHandler::GetLine(size_t lineNum)
 {
     // Fist line is always 1
     if (lineNum < 1)
@@ -79,14 +79,14 @@ string ErrorHandler::GetLine(size_t lineNum)
             break;
         }
         if (m_Script[i] == '\n') {
-            l ++;
+            l++;
         }
     }
 
-    string line;
+    std::string line;
     while (i < length && m_Script[i] != '\n') {
         line += m_Script[i];
-        i ++;
+        i++;
     }
 
     return line;
@@ -94,7 +94,7 @@ string ErrorHandler::GetLine(size_t lineNum)
 
 void ErrorHandler::PrintMessage(CompilerMessage *message)
 {
-    string msg = FormattedErrorMessage(GetLine(message->LineNum), message->LineNum, message->LinePos, message->Message);
+    std::string msg = FormattedErrorMessage(GetLine(message->LineNum), message->LineNum, message->LinePos, message->Message);
 
     if (IsError(message->Code)) {
         ERR(msg);
@@ -115,7 +115,7 @@ bool ErrorHandler::IsWarning(StatusCode code)
     return code >= wrnWarning && code < errError;
 }
 
-string ErrorHandler::FormattedErrorMessage(const std::string &line, size_t lineNum, size_t errorPos, const std::string &message)
+std::string ErrorHandler::FormattedErrorMessage(const std::string &line, size_t lineNum, size_t errorPos, const std::string &message)
 {
     std::string err = "Line " + std::to_string(lineNum) + " , Pos " + std::to_string(errorPos) + ":\n";
     err += line;
@@ -133,14 +133,15 @@ string ErrorHandler::FormattedErrorMessage(const std::string &line, size_t lineN
     return err;
 }
 
-void ErrorHandler::PrintErrors() {
+void ErrorHandler::PrintErrors()
+{
     if (ErrorCount() == 0) {
         MSG("---- " << ErrorCount() << " Error(s) ----");
         return;
     }
 
     ERR("---- " << ErrorCount() << " Error(s) ----");
-    for (auto &err: m_Errors) {
+    for (auto &err : m_Errors) {
         PrintMessage(&err);
     }
     if (ErrorCount() > 0) {
@@ -148,9 +149,10 @@ void ErrorHandler::PrintErrors() {
     }
 }
 
-void ErrorHandler::PrintWarnings() {
+void ErrorHandler::PrintWarnings()
+{
     MSG("---- " << WarningCount() << " Warnings(s) ----");
-    for (auto &warn: m_Warnings) {
+    for (auto &warn : m_Warnings) {
         PrintMessage(&warn);
     }
     if (WarningCount() > 0) {
@@ -158,9 +160,10 @@ void ErrorHandler::PrintWarnings() {
     }
 }
 
-void ErrorHandler::PrintMessages() {
+void ErrorHandler::PrintMessages()
+{
     MSG("---- " << MessageCount() << " Message(s) ----");
-    for (auto &msg: m_Messages) {
+    for (auto &msg : m_Messages) {
         PrintMessage(&msg);
     }
     if (MessageCount() > 0) {

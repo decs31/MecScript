@@ -1,54 +1,91 @@
 ﻿// ScriptUtils
 
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <winerror.h>
 #include "Console.h"
-#include "Options.h"
-#include "utils/ScriptUtils.h"
-#include "lexer/Lexer.h"
-#include "compiler/Compiler.h"
-#include "preprocessor/PreProcessor.h"
 #include "Disassembler.h"
+#include "Native.h"
+#include "Options.h"
 #include "ScriptInfo.h"
+#include "compiler/Compiler.h"
+#include "lexer/Lexer.h"
+#include "preprocessor/PreProcessor.h"
+#include "utils/ScriptUtils.h"
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <winerror.h>
 
-
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     std::filesystem::path inputFilePath;
     std::filesystem::path outputFilePath;
+    std::filesystem::path nativeFuncFilePath;
     u8 flags = 0;
-    // Read args
-    for(int i = 1; i < argc; i ++) {
-        std::string arg = argv[i];
-        // Verbose
-        if (arg.substr(0, 2) == "-v") {
-            MSG("Verbose Output = On");
-            ScriptUtils::VerboseOutput = true;
-        }
-        // Embed the filename in the output binary
-        else if (arg.substr(0, 2) == "-f") {
-            MSG("Embed file name = On");
-            flags |= cfEmbeddedFileName;
-        }
-        // Input path
-        else if (inputFilePath.empty()) {
-            inputFilePath = arg;
-        }
-        // Output path
-        else if (outputFilePath.empty()) {
-            outputFilePath = arg;
+
+    { // Read args
+        int i = 1;
+        while (i < argc) {
+            std::string arg = argv[i++];
+
+            if (arg.substr(0, 2) == "-v") { // Verbose output
+                MSG("Verbose Output = On");
+                ScriptUtils::VerboseOutput = true;
+            } else if (arg.substr(0, 2) == "-f") { // Embed the filename in the output binary
+                MSG("Embed file name = On");
+                flags |= cfEmbeddedFileName;
+            } else if (arg.substr(0, 2) == "-n") { // Native function file
+                if (i >= argc) {
+                    ERR("Expected native function file path!");
+                    exit(ERROR_INVALID_FUNCTION);
+                }
+                nativeFuncFilePath = argv[i++];
+            } else if (inputFilePath.empty()) { // Input path
+                inputFilePath = arg;
+            } else if (outputFilePath.empty()) { // Output path
+                outputFilePath = arg;
+            }
         }
     }
 
+    // If a native function file is provided, load it
+    std::string nativeFuncScript;
+
+    if (!nativeFuncFilePath.empty()) {
+        MSG("Loading native functions from: " << nativeFuncFilePath);
+
+        std::ifstream nfInput(nativeFuncFilePath, std::fstream::in);
+
+        if (!nfInput.good()) {
+            ERR("File does not exist or cannot be opened: " << nativeFuncFilePath);
+            exit(ERROR_FILE_NOT_FOUND);
+        }
+
+        // Begin reading the input file
+        MSG("Reading Native Function input file: " << nativeFuncFilePath);
+        std::stringstream nfBuffer;
+        nfBuffer << nfInput.rdbuf();
+        nativeFuncScript = nfBuffer.str();
+
+        if (nativeFuncScript.empty()) {
+            ERR("Native Function Script is empty.");
+            exit(ERROR_INVALID_DATA);
+        }
+    }
+
+    ErrorHandler nativeErrorHandler(nativeFuncScript);
+    NativeFunctionParser nativeFuncs(&nativeErrorHandler, nativeFuncScript);
+    StatusCode nativeParseResult = nativeFuncs.Parse();
+
+    if (nativeParseResult != stsOk) {
+        ERR("Error parsing native functions");
+        exit(ERROR_INVALID_DATA);
+    }
+
+    // Check Input File
     if (inputFilePath.empty()) {
         ERR("Incorrect usage!");
         ERR("Correct usage is: " << COMPILER_NAME << " <script." << SCRIPT_EXTENSION << ">");
         exit(ERROR_INVALID_FUNCTION);
     }
-
-	MSG("Starting ScriptUtils...");
 
     std::ifstream input(inputFilePath, std::fstream::in);
 
@@ -57,6 +94,7 @@ int main(int argc, char* argv[])
         exit(ERROR_FILE_NOT_FOUND);
     }
 
+    // Begin reading the input file
     MSG("Reading input file: \"" << inputFilePath << "\"");
     std::stringstream buffer;
     buffer << input.rdbuf();
@@ -80,7 +118,7 @@ int main(int argc, char* argv[])
 
     // Start Compiler
     ErrorHandler errorHandler(script);
-    Compiler compiler(&errorHandler, script, flags, outputFileName);
+    Compiler compiler(&errorHandler, &nativeFuncs, script, flags, outputFileName);
 
     StatusCode compile = compiler.Compile();
 
@@ -107,5 +145,5 @@ int main(int argc, char* argv[])
         exit(ERROR_FILE_INVALID);
     }
 
-	return 0;
+    return 0;
 }

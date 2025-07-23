@@ -30,18 +30,19 @@ bool ScriptUtils::StringToInt(const std::string &str, int &outInt, int base)
     return true;
 }
 
-int ScriptUtils::ParseInteger(const std::string &intString) {
+int ScriptUtils::ParseInteger(const std::string &intString)
+{
     int iVal;
-    string str;
+    std::string str;
     int base;
     if (intString.starts_with("0b")) { // Binary
-        str = intString.substr(2);
+        str  = intString.substr(2);
         base = 2;
     } else if (intString.starts_with("0o")) { // Octal
-        str = intString.substr(2);
+        str  = intString.substr(2);
         base = 8;
     } else { // Decimal or Hex
-        str = intString;
+        str  = intString;
         base = 0; // Determined from string
     }
 
@@ -52,7 +53,8 @@ int ScriptUtils::ParseInteger(const std::string &intString) {
     }
 }
 
-uint32_t ScriptUtils::AlignTo(uint32_t value, uint32_t offset) {
+uint32_t ScriptUtils::AlignTo(uint32_t value, uint32_t offset)
+{
     uint32_t aligned = value;
     while (aligned % offset > 0) {
         ++aligned;

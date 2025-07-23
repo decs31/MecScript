@@ -5,11 +5,9 @@
 #ifndef ERRORHANDLER_H
 #define ERRORHANDLER_H
 
-#include <vector>
 #include "ScriptUtils.h"
 #include "Tokens.h"
-
-using string = std::string;
+#include <vector>
 
 enum CompileStage {
     csNotSet = 0,
@@ -51,20 +49,21 @@ enum StatusCode {
 };
 
 struct CompilerMessage {
-    CompileStage Source = csNotSet;
-    StatusCode Code = stsOk;
+    CompileStage Source  = csNotSet;
+    StatusCode Code      = stsOk;
     bool ShowImmediately = false;
-    bool Shown = false;
-    size_t FilePos = 0;
-    size_t LineNum = 0;
-    size_t LinePos = 0;
-    Token *token = nullptr;
-    string Message;
+    bool Shown           = false;
+    size_t FilePos       = 0;
+    size_t LineNum       = 0;
+    size_t LinePos       = 0;
+    Token *token         = nullptr;
+    std::string Message;
 };
 
-class ErrorHandler {
-public:
-    explicit ErrorHandler(const string &script);
+class ErrorHandler
+{
+  public:
+    explicit ErrorHandler(const std::string &script);
     ~ErrorHandler() = default;
 
     static bool IsError(StatusCode code);
@@ -76,7 +75,7 @@ public:
     size_t ErrorCount();
     bool ErrorsOverwater();
 
-    void SetScript(const string &script);
+    void SetScript(const std::string &script);
     void AddMessage(CompilerMessage &message);
 
     void PrintErrors();
@@ -88,19 +87,17 @@ public:
     std::vector<CompilerMessage> Warnings();
     std::vector<CompilerMessage> Errors();
 
-private:
+  private:
     std::string_view m_Script;
 
     std::vector<CompilerMessage> m_Messages;
     std::vector<CompilerMessage> m_Warnings;
     std::vector<CompilerMessage> m_Errors;
 
-    string GetLine(size_t lineNum);
+    std::string GetLine(size_t lineNum);
     void PrintMessage(CompilerMessage *message);
 
-    string FormattedErrorMessage(const std::string &line, size_t lineNum, size_t errorPos, const std::string &message);
-
+    std::string FormattedErrorMessage(const std::string &line, size_t lineNum, size_t errorPos, const std::string &message);
 };
 
-
-#endif //ERRORHANDLER_H
+#endif // ERRORHANDLER_H
