@@ -875,7 +875,7 @@ u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stack
     script->Stack.Values = (Value *) (stack + stackOffset);
     script->Stack.Count = (stackSize - stackOffset) / sizeof(Value);
 
-    if ((header->Flags & cfEmbeddedFileName) && script->Strings.Count > 0) {
+    if ((header->Flags & CompileOptions::coEmbeddedFileName) && script->Strings.Count > 0) {
         script->FileName = (char *)&script->Strings.Values[0];
     } else {
         script->FileName = nullptr;

@@ -44,7 +44,7 @@ class Compiler : public CompilerBase
   private:
     static Compiler *m_Compiler;
     NativeFunctionParser *m_NativeFuncs;
-    u8 m_Flags = 0;
+    u8 m_Flags;
     std::string m_TopLevelFileName;
     PreProcessor m_PreProcessor;
     StatusCode m_Result = stsOk;

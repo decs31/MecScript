@@ -13,12 +13,12 @@ CompilerBase::~CompilerBase()
 bool CompilerBase::IsAtEnd()
 {
     if (CurrentToken().TokenType == tknEndOfFile) {
-        MSG("End of file token reached.");
+        MSG_V("End of file token reached.");
         return true;
     }
 
     if (m_CurrentPos >= m_Lexer.Tokens().size()) {
-        MSG("End of tokens!");
+        MSG_V("End of tokens!");
         return true;
     }
 

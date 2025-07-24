@@ -26,7 +26,7 @@ StatusCode NativeFunctionParser::Parse()
     }
 
     m_Status = stsOk;
-    MSG("Starting Native Function Parser...");
+    MSG_V("Starting Native Function Parser...");
 
     m_FunctionMap.clear();
 
@@ -46,7 +46,7 @@ StatusCode NativeFunctionParser::Parse()
         ParseNativeFunction();
     }
 
-    MSG("Parsed " << m_FunctionMap.size() << " native functions");
+    MSG_V("Parsed " << m_FunctionMap.size() << " native functions");
 
     m_Status = stsOk;
 
@@ -128,4 +128,5 @@ void NativeFunctionParser::ParseNativeFunction()
     NativeFuncInfo nativeFunc(functionId, returnType, params);
     nativeFunc.Name                  = tknFunction.Value;
     m_FunctionMap[tknFunction.Value] = nativeFunc;
+    MSG_V("Parsed native function \"" + nativeFunc.Name + "\"");
 }

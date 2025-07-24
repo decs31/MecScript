@@ -114,17 +114,18 @@ StatusCode Lexer::Tokenize()
         return m_Status;
     }
 
-    MSG("Lexical analysis begin...");
+    MSG_V("Lexical analysis begin...");
     m_Status = stsOk;
 
     while (m_Pos <= m_Script.length()) {
         m_Status = ProcessNextToken();
     }
 
-    if (m_ErrorHandler->ErrorCount() == 0)
-        return SetResult(stsLexEndOfFile, std::to_string(m_Tokens.size()) + " Tokens");
-    else
+    if (m_ErrorHandler->ErrorCount() == 0) {
+        return SetResult(stsLexEndOfFile, "Parsed " + std::to_string(m_Tokens.size()) + " Tokens");
+    } else {
         return SetResult(wrnLexEndOfFileWithErrors, std::to_string(m_ErrorHandler->ErrorCount()) + " Errors");
+    }
 }
 
 StatusCode Lexer::ProcessNextToken()
@@ -274,9 +275,11 @@ StatusCode Lexer::ProcessNextToken()
 
         m_Tokens.push_back(token);
 
+        /* Uncomment this to see the token output
         MSG_V(
             "[" + std::to_string(token.Position.LineNum) + ":" + std::to_string(token.Position.LinePos) + "]Token<" + std::to_string(token.TokenType) + ">: \""
             << token.Value << "\"");
+        */
 
         if (token.TokenType == tknEndOfFile)
             return SetResult(stsLexEndOfFile, "End of file reached.");

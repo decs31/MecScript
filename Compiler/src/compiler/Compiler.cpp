@@ -27,7 +27,7 @@ Compiler::Compiler(ErrorHandler *errorHandler, NativeFunctionParser *nativeFuncs
     m_NativeFuncs = nativeFuncs;
 
     // Push the filename into the compiled output if it's given
-    if ((m_Flags & cfEmbeddedFileName) && !fileName.empty()) {
+    if ((m_Flags & coEmbeddedFileName) && !fileName.empty()) {
         m_TopLevelFileName = fileName;
         AddString(m_TopLevelFileName);
     }
@@ -145,7 +145,6 @@ StatusCode Compiler::Compile()
     }
 
     m_Status = stsOk;
-    MSG("Starting Compiler...");
 
     auto top = CreateFunction("", ftScript, dtVoid);
     if (top == nullptr) {
@@ -158,13 +157,18 @@ StatusCode Compiler::Compile()
         return SetResult(errLexError);
     }
 
+    MSG_V(m_Lexer.Message());
+
     // PreProcessor
     if (m_PreProcessor.Run(m_Lexer.Tokens()) != stsOk) {
         m_Status = errPreProcessError;
         return SetResult(errPreProcessError);
     }
 
+    // MSG_V(m_PreProcessor.Message());
+
     // Compile
+    MSG_V("Starting Compiler...");
     // Start by skipping any initial comments
     while (IsSkippable(CurrentToken())) {
         m_CurrentPos++;
@@ -2089,6 +2093,13 @@ void Compiler::FunctionDeclaration(DataType dataType)
 {
     Token token          = ConsumeToken(tknIdentifier, -2, "Expected method name.");
     std::string funcName = token.Value;
+
+    // Make sure the function isn't in conflict with a native function
+    if (ResolveNativeFunction(funcName) != nullptr) {
+        AddError("Function declaration conflicts with existing native function named \"" + funcName + "\"", token);
+        return;
+    }
+
     Function(funcName, ftFunction, dataType);
 }
 
@@ -3054,8 +3065,6 @@ void Compiler::EmitLoop(int loopStart)
 
     EmitByte(mByte0(offset));
     EmitByte(mByte1(offset));
-
-    // MSG_V("Loop @ " + std::to_string(CURRENT_CODE_POS - 3) + " = " + std::to_string(offset));
 }
 
 void Compiler::EmitCall(opCode_t callOp, int argsCount)
@@ -3308,8 +3317,10 @@ StatusCode Compiler::WriteBinaryFile(const std::string &filePath)
     outFile.close();
 
     // Disassembly
-    Disassembler disassembler(fileBytes.data(), fileBytes.size());
-    disassembler.Disassemble();
+    if (m_Flags & CompileOptions::coDecompileResult) {
+        Disassembler disassembler(fileBytes.data(), fileBytes.size());
+        disassembler.Disassemble();
+    }
 
     // TODO: Debug file output
 

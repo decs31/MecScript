@@ -201,8 +201,9 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         // Verbose
-        if (arg.substr(0, 2) == "-v") {
+        if (arg == "-v") {
             MSG("Verbose Output = On");
+            Console::VerboseOutput = true;
         }
             // Input path
         else if (inputFilePath.empty()) {
@@ -216,7 +217,7 @@ int main(int argc, char *argv[]) {
         exit(ERROR_INVALID_FUNCTION);
     }
 
-    std::cout << "<<<< MecScript Virtual Machine >>>>" << std::endl;
+    MSG_V("====== MecScript Virtual Machine ======");
 
     std::ifstream scriptFile(inputFilePath, std::fstream::binary);
 
@@ -225,7 +226,7 @@ int main(int argc, char *argv[]) {
         exit(ERROR_FILE_NOT_FOUND);
     }
 
-    MSG("Reading input file: \"" << inputFilePath << "\"");
+    MSG_V("Reading input file: \"" << inputFilePath << "\"");
     std::vector<unsigned char> scriptData(std::istreambuf_iterator<char>(scriptFile), {});
 
     if (scriptData.empty()) {
@@ -233,7 +234,7 @@ int main(int argc, char *argv[]) {
         exit(ERROR_INVALID_DATA);
     }
 
-    MSG("Program size: " << scriptData.size() << " bytes.");
+    MSG_V("Program size: " << scriptData.size() << " bytes.");
 
     // Give the VM a way to access native functions
     MecVm::SetNativeFunctionResolver(ResolveNativeFunction);
@@ -244,14 +245,15 @@ int main(int argc, char *argv[]) {
 
     // Create a VM and decode the script code into the script struct
     MecVm vm;
-    vm.DecodeScript(scriptData.data(), scriptData.size(), stack, STACK_SIZE, &script);
-    MSG("Stack size after globals: " << (script.Stack.Count * sizeof(Value)) << " bytes.");
+    MecVm::DecodeScript(scriptData.data(), scriptData.size(), stack, STACK_SIZE, &script);
+    MSG_V("Stack size after globals: " << (script.Stack.Count * sizeof(Value)) << " bytes.");
 
     // Run the script
-    MSG("======== Script Start ========");
+    MSG_V("======== Script Start ========");
+
     vm.Run(&script);
 
-    MSG("\n====== Script Finished =======");
+    MSG_V("\n====== Script Finished =======");
 
     scriptFile.close();
 

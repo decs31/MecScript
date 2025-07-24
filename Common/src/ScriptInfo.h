@@ -11,6 +11,12 @@
 #define LANG_VERSION_MAJOR 0
 #define LANG_VERSION_MINOR 1
 
+enum CompileOptions : u32 {
+    coEmbeddedFileName = 0x01,
+    coShortAddressing = 0x02,
+    coDecompileResult = 0x04,
+};
+
 struct CodeData {
     opCode_t *Data;
     u32 Length;
@@ -28,11 +34,6 @@ struct ScriptInfo {
     ValueData Globals;
     ValueData Stack;
     const char *FileName;
-};
-
-enum CompilerFlags : u8 {
-    cfEmbeddedFileName = 0x01,
-    cfShortAddressing = 0x02,
 };
 
 struct ScriptBinaryHeader {

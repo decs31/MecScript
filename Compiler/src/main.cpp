@@ -19,25 +19,28 @@ int main(int argc, char *argv[])
     std::filesystem::path inputFilePath;
     std::filesystem::path outputFilePath;
     std::filesystem::path nativeFuncFilePath;
-    u8 flags = 0;
+    u32 flags = 0;
 
     { // Read args
         int i = 1;
         while (i < argc) {
             std::string arg = argv[i++];
 
-            if (arg.substr(0, 2) == "-v") { // Verbose output
+            if (arg == "-v") { // Verbose output
                 MSG("Verbose Output = On");
-                ScriptUtils::VerboseOutput = true;
-            } else if (arg.substr(0, 2) == "-f") { // Embed the filename in the output binary
+                Console::VerboseOutput = true;
+            } else if (arg == "-f") { // Embed the filename in the output binary
                 MSG("Embed file name = On");
-                flags |= cfEmbeddedFileName;
-            } else if (arg.substr(0, 2) == "-n") { // Native function file
+                flags |= CompileOptions::coEmbeddedFileName;
+            } else if (arg == "-n") { // Native function file
                 if (i >= argc) {
                     ERR("Expected native function file path!");
                     exit(ERROR_INVALID_FUNCTION);
                 }
                 nativeFuncFilePath = argv[i++];
+            } else if (arg == "-d") { // Decompiler resulting binary
+                MSG("Decompile output binary = On");
+                flags |= CompileOptions::coDecompileResult;
             } else if (inputFilePath.empty()) { // Input path
                 inputFilePath = arg;
             } else if (outputFilePath.empty()) { // Output path
@@ -50,7 +53,7 @@ int main(int argc, char *argv[])
     std::string nativeFuncScript;
 
     if (!nativeFuncFilePath.empty()) {
-        MSG("Loading native functions from: " << nativeFuncFilePath);
+        MSG_V("Loading native functions from: " << nativeFuncFilePath);
 
         std::ifstream nfInput(nativeFuncFilePath, std::fstream::in);
 
@@ -60,7 +63,7 @@ int main(int argc, char *argv[])
         }
 
         // Begin reading the input file
-        MSG("Reading Native Function input file: " << nativeFuncFilePath);
+        MSG_V("Reading Native Function input file: " << nativeFuncFilePath);
         std::stringstream nfBuffer;
         nfBuffer << nfInput.rdbuf();
         nativeFuncScript = nfBuffer.str();
@@ -95,7 +98,7 @@ int main(int argc, char *argv[])
     }
 
     // Begin reading the input file
-    MSG("Reading input file: \"" << inputFilePath << "\"");
+    MSG_V("Reading input file: \"" << inputFilePath << "\"");
     std::stringstream buffer;
     buffer << input.rdbuf();
     std::string script = buffer.str();
@@ -105,7 +108,7 @@ int main(int argc, char *argv[])
         exit(ERROR_INVALID_DATA);
     }
 
-    MSG("File length: " << script.length());
+    MSG_V("File length: " << script.length());
 
     // If no output file path provided, make one from the input file.
     if (outputFilePath.empty()) {
@@ -123,7 +126,7 @@ int main(int argc, char *argv[])
     StatusCode compile = compiler.Compile();
 
     if (compile == stsCompileDone) {
-        MSG("Compile complete!\n" << compiler.Message());
+        MSG(compiler.Message());
     } else {
         ERR("Compile failed!\n" << compiler.Message());
     }
@@ -138,7 +141,6 @@ int main(int argc, char *argv[])
     // Compile to Byte Code
     StatusCode writeFile = compiler.WriteBinaryFile(outputFilePath.string());
     if (writeFile == stsBinaryFileDone) {
-        MSG("Success!");
         MSG(compiler.Message());
     } else {
         ERR(compiler.Message());
