@@ -53,7 +53,7 @@ StatusCode NativeFunctionParser::Parse()
     return m_Status;
 }
 
-const std::map<std::string, NativeFuncInfo> &NativeFunctionParser::Functions() const
+std::map<std::string, NativeFuncInfo> &NativeFunctionParser::Functions()
 {
     return m_FunctionMap;
 }

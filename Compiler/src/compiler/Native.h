@@ -17,7 +17,7 @@ class NativeFunctionParser : public CompilerBase
 
     StatusCode Parse();
 
-    const std::map<std::string, NativeFuncInfo> &Functions() const;
+    std::map<std::string, NativeFuncInfo> &Functions();
 
   private:
     std::map<std::string, NativeFuncInfo> m_FunctionMap;

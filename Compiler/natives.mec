@@ -1,26 +1,26 @@
 // Print
-[native 1] void print(string str);
+[native 1] void Print(string str);
 
 // Print Line
-[native 2] void println(string str);
+[native 2] void PrintLn(string str);
 
 // Print Integer
-[native 3] void print(int i);
+[native 3] void PrintI(int i);
 
 // Print Float
-[native 4] void print(float f);
+[native 4] void PrintF(float f);
 
 // Print Format
-[native 5] void print(string str, float f);
+[native 5] void PrintFmt(string str, float f);
 
 // Clock
-[native 6] int clock();
+[native 6] int Clock();
 
 // Yield For
-[native 7] void yield(uint t);
+[native 7] void Yield(uint t);
 
 // Yield Until
-[native 8] void yieldUntil(uint t);
+[native 8] void YieldUntil(uint t);
 
 // Read Runtime
 [native 9] int ReadRuntime(uint id);

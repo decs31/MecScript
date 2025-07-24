@@ -19,21 +19,6 @@
 #define CURRENT_CODE_POS  (int)CurrentFunction()->Code.size()
 #define CURRENT_SCOPE     m_ScopeDepth
 
-static std::map<std::string, NativeFuncInfo> NativeFunctionMap = {
-    { "print", NativeFuncInfo(nfPrint, dtVoid, std::vector<DataType>() = { dtString }) },
-    { "println", NativeFuncInfo(nfPrintLine, dtVoid, std::vector<DataType>() = { dtString }) },
-    { "printi", NativeFuncInfo(nfPrintInt, dtVoid, std::vector<DataType>() = { dtInt32 }) },
-    { "printf", NativeFuncInfo(nfPrintFloat, dtVoid, std::vector<DataType>() = { dtFloat }) },
-    { "printfmt", NativeFuncInfo(nfPrintFormat, dtVoid, std::vector<DataType>() = { dtString, dtFloat }) },
-    { "clock", NativeFuncInfo(nfClock, dtInt32) },
-    { "Yield", NativeFuncInfo(nfYieldFor, dtVoid, std::vector<DataType>() = { dtUint32 }) },
-    { "YieldUntil", NativeFuncInfo(nfYieldUntil, dtVoid, std::vector<DataType>() = { dtUint32 }) },
-    { "ReadRuntime", NativeFuncInfo(nfReadRuntime, dtInt32, std::vector<DataType>() = { dtUint32 }) },
-    { "ReadRuntimeReal", NativeFuncInfo(nfReadRuntimeReal, dtFloat, std::vector<DataType>() = { dtUint32 }) },
-    { "WriteRuntime", NativeFuncInfo(nfWriteRuntime, dtVoid, std::vector<DataType>() = { dtUint32, dtInt32 }) },
-    { "WriteRuntimeReal", NativeFuncInfo(nfWriteRuntimeReal, dtVoid, std::vector<DataType>() = { dtUint32, dtFloat }) },
-};
-
 Compiler::Compiler(ErrorHandler *errorHandler, NativeFunctionParser *nativeFuncs, const std::string &script, const u8 flags, const std::string &fileName)
     : CompilerBase(errorHandler, script),
       m_PreProcessor(errorHandler)
@@ -204,10 +189,14 @@ StatusCode Compiler::Compile()
     return SetResult(stsCompileDone, "Compile Done");
 }
 
-bool Compiler::CheckNativeFunction(const Token &token)
-{
-    auto nf = NativeFunctionMap.find(token.Value);
-    if (nf != NativeFunctionMap.end())
+bool Compiler::CheckNativeFunction(const Token &token) {
+    if (m_NativeFuncs == nullptr) {
+        return false;
+    }
+
+    auto nfMap = m_NativeFuncs->Functions();
+    auto nf = nfMap.find(token.Value);
+    if (nf != nfMap.end())
         return true;
 
     return false;
@@ -2345,10 +2334,13 @@ void Compiler::PointerIndex(bool canAssign)
 
 NativeFuncInfo *Compiler::ResolveNativeFunction(const std::string &name)
 {
-    const auto nf = NativeFunctionMap.find(name);
-    if (nf != NativeFunctionMap.end()) {
-        // Tag the function name onto the result
-        nf->second.Name = name;
+    if (m_NativeFuncs == nullptr) {
+        return nullptr;
+    }
+
+    auto &nfMap = m_NativeFuncs->Functions();
+    const auto nf = nfMap.find(name);
+    if (nf != nfMap.end()) {
         return &nf->second;
     }
 
