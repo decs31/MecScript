@@ -9,10 +9,11 @@
 #include "Checksum.h"
 
 #ifdef DEBUG_TRACE_EXECUTION
-#include "Debugger.h"
 #include "Checksum.h"
+#include "Debugger.h"
 #include <iostream>
-#define DISASSEMBLE_INSTRUCTION(start, code)    Debugger::DebugInstruction(start, code)
+
+#define DISASSEMBLE_INSTRUCTION(start, code) Debugger::DebugInstruction(start, code)
 #else
 #define DISASSEMBLE_INSTRUCTION(start, code)
 #define MSG(msg)
@@ -20,23 +21,23 @@
 #define PRINT(msg)
 #endif
 
-#define CONSTANTS_START_PTR             m_Script->Constants.Values
-#define STRINGS_START_PTR               m_Script->Strings.Values
-#define STACK_GLOBALS_START_PTR         m_Script->Globals.Values
-#define STACK_LOCALS_START_PTR          m_Script->Stack.Values
-#define STACK_POSITION                  (m_StackPtr - STACK_LOCALS_START_PTR)
-#define STACK_POS_AT(ptr)               (ptr - STACK_LOCALS_START_PTR)
-#define STACK_END_PTR                   (m_Script->Stack.Values + m_Script->Stack.Count)
+#define CONSTANTS_START_PTR     m_Script->Constants.Values
+#define STRINGS_START_PTR       m_Script->Strings.Values
+#define STACK_GLOBALS_START_PTR m_Script->Globals.Values
+#define STACK_LOCALS_START_PTR  m_Script->Stack.Values
+#define STACK_POSITION          (m_StackPtr - STACK_LOCALS_START_PTR)
+#define STACK_POS_AT(ptr)       (ptr - STACK_LOCALS_START_PTR)
+#define STACK_END_PTR           (m_Script->Stack.Values + m_Script->Stack.Count)
 
-#define PGM_CODE                        m_Script->Code.Data
-#define PGM_CONSTANTS                   CODE_CONSTANTS_START_PTR
-#define PGM_STRINGS                     STRINGS_START_PTR
-#define PGM_GLOBALS                     STACK_GLOBALS_START_PTR
-#define FRAME_LOCALS                    m_Frame.Slots
-#define THIS_ADDRESS                    FRAME_LOCALS[0]
-#define STACK_ADDRESS_OF(ptr)           (u32)(ResolvePointer(ptr) - PGM_GLOBALS);
+#define PGM_CODE                m_Script->Code.Data
+#define PGM_CONSTANTS           CODE_CONSTANTS_START_PTR
+#define PGM_STRINGS             STRINGS_START_PTR
+#define PGM_GLOBALS             STACK_GLOBALS_START_PTR
+#define FRAME_LOCALS            m_Frame.Slots
+#define THIS_ADDRESS            FRAME_LOCALS[0]
+#define STACK_ADDRESS_OF(ptr)   (u32)(ResolvePointer(ptr) - PGM_GLOBALS);
 
-#define FRAME_SIZE                      ((sizeof(CallFrame) / sizeof(Value)) + (sizeof(CallFrame) % sizeof(Value) > 0 ? 1 : 0))
+#define FRAME_SIZE              ((sizeof(CallFrame) / sizeof(Value)) + (sizeof(CallFrame) % sizeof(Value) > 0 ? 1 : 0))
 
 /* Instruction Readers */
 #define READ_BYTE()             (*m_Frame.Ip++)
@@ -45,40 +46,40 @@
 #define READ_INT32()            (m_Frame.Ip += 4, (int32_t)(m_Frame.Ip[-4] | (m_Frame.Ip[-3] << 8) | (m_Frame.Ip[-2] << 16) | (m_Frame.Ip[-1] << 24)))
 
 /* Instruction Macros */
-#define OP_BINARY(op, resultType, valueType) \
-do { \
-    Value rhs = Pop(); \
-    Value lhs = Pop(); \
-    Push(resultType(valueType(lhs) op valueType(rhs))); \
-} while(false)
-
+#define OP_BINARY(op, resultType, valueType)                \
+    do {                                                    \
+        Value rhs = Pop();                                  \
+        Value lhs = Pop();                                  \
+        Push(resultType(valueType(lhs) op valueType(rhs))); \
+    } while (false)
 
 // Float 0 is the same as Int 0, so we only need to check the Int value.
-#define IS_FALSEY(value)              (AS_INT32(value) == 0)
+#define IS_FALSEY(value) (AS_INT32(value) == 0)
 
 ResolverFunction MecVm::FunctionResolver = nullptr;
 
-MecVm::MecVm() {
+MecVm::MecVm()
+{
 }
 
-MecVm::~MecVm() {
+MecVm::~MecVm()
+{
 }
 
-void MecVm::GetLanguageVersion(u8 &major, u8 &minor) {
-
+void MecVm::GetLanguageVersion(u8 &major, u8 &minor)
+{
     major = LANG_VERSION_MAJOR;
     minor = LANG_VERSION_MINOR;
 }
 
-VmStatus MecVm::GetStatus() {
-
+VmStatus MecVm::GetStatus()
+{
     return m_Status;
 }
 
-
-void MecVm::Run(ScriptInfo *script, void *sysParam) {
-
-    m_Script = script;
+void MecVm::Run(ScriptInfo *script, void *sysParam)
+{
+    m_Script          = script;
     m_SystemParameter = sysParam;
 
     if (m_Script == nullptr || m_Script->Code.Length == 0) {
@@ -101,7 +102,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_PUSH: {
-                Push({INT32_VAL(0)});
+                Push({ INT32_VAL(0) });
                 break;
             }
 
@@ -165,19 +166,19 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
 
             case OP_STRING: {
                 u32 address = READ_BYTE();
-                Push({.UInt = address});
+                Push({ .UInt = address });
                 break;
             }
 
             case OP_STRING_16: {
                 u32 address = READ_UINT16();
-                Push({.UInt = address});
+                Push({ .UInt = address });
                 break;
             }
 
             case OP_STRING_24: {
                 u32 address = READ_UINT24();
-                Push({.UInt = address});
+                Push({ .UInt = address });
                 break;
             }
 
@@ -188,7 +189,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_GET_INDEXED_S8: {
-                int i = AS_INT32(Pop());
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 2);
                 Value data = INT32_VAL(ResolvePointer(ptr)->Chars[i & 0x03]);
@@ -197,7 +198,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_GET_INDEXED_U8: {
-                int i = AS_INT32(Pop());
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 2);
                 Value data = INT32_VAL(ResolvePointer(ptr)->Bytes[i & 0x03]);
@@ -206,7 +207,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_GET_INDEXED_S16: {
-                int i = AS_INT32(Pop());
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 1);
                 Value data = INT32_VAL(ResolvePointer(ptr)->Shorts[i & 0x01]);
@@ -215,7 +216,7 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_GET_INDEXED_U16: {
-                int i = AS_INT32(Pop());
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 1);
                 Value data = INT32_VAL(ResolvePointer(ptr)->UShorts[i & 0x01]);
@@ -223,11 +224,10 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
                 break;
             }
 
-
             case OP_GET_INDEXED_S32:
             case OP_GET_INDEXED_U32:
             case OP_GET_INDEXED_FLOAT: {
-                int i = AS_INT32(Pop());
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += i;
                 Value data = *ResolvePointer(ptr);
@@ -236,8 +236,8 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_SET_INDEXED_S8: {
-                Value value = Pop();
-                int i = AS_INT32(Pop());
+                Value value   = Pop();
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 2);
                 ResolvePointer(ptr)->Chars[i & 0x03] = AS_INT8(value);
@@ -246,8 +246,8 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_SET_INDEXED_U8: {
-                Value value = Pop();
-                int i = AS_INT32(Pop());
+                Value value   = Pop();
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 2);
                 ResolvePointer(ptr)->Bytes[i & 0x03] = AS_UINT8(value);
@@ -256,8 +256,8 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_SET_INDEXED_S16: {
-                Value value = Pop();
-                int i = AS_INT32(Pop());
+                Value value   = Pop();
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 1);
                 ResolvePointer(ptr)->Shorts[i & 0x01] = AS_INT16(value);
@@ -266,8 +266,8 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_SET_INDEXED_U16: {
-                Value value = Pop();
-                int i = AS_INT32(Pop());
+                Value value   = Pop();
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += (i >> 1);
                 ResolvePointer(ptr)->UShorts[i & 0x01] = AS_UINT16(value);
@@ -278,15 +278,14 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             case OP_SET_INDEXED_S32:
             case OP_SET_INDEXED_U32:
             case OP_SET_INDEXED_FLOAT: {
-                Value value = Pop();
-                int i = AS_INT32(Pop());
+                Value value   = Pop();
+                int i         = AS_INT32(Pop());
                 VmPointer ptr = AS_POINTER(Pop());
                 ptr.Address += i;
                 *ResolvePointer(ptr) = value;
                 Push(value);
                 break;
             }
-
 
                 /* Variables */
             case OP_GET_VARIABLE: {
@@ -297,29 +296,29 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
 
             case OP_ABSOLUTE_POINTER: {
                 VmPointer ptr = AS_POINTER(Pop());
-                ptr.Address = STACK_ADDRESS_OF(ptr);
-                ptr.Scope = scopeStackAbsolute;
+                ptr.Address   = STACK_ADDRESS_OF(ptr);
+                ptr.Scope     = scopeStackAbsolute;
                 Push(POINTER_VAL(ptr));
                 break;
             }
 
                 // Cast
             case OP_CAST_INT_TO_FLOAT: {
-                Push(FLOAT_VAL((float) AS_INT32(Pop())));
+                Push(FLOAT_VAL((float)AS_INT32(Pop())));
                 break;
             }
             case OP_CAST_PREV_INT_TO_FLOAT: {
                 Value *prev = (m_StackPtr - 2);
-                prev->Float = (float) prev->Int;
+                prev->Float = (float)prev->Int;
                 break;
             }
             case OP_CAST_FLOAT_TO_INT: {
-                Push(INT32_VAL((int) AS_FLOAT(Pop())));
+                Push(INT32_VAL((int)AS_FLOAT(Pop())));
                 break;
             }
             case OP_CAST_PREV_FLOAT_TO_INT: {
                 Value *prev = (m_StackPtr - 2);
-                prev->Int = (int) prev->Float;
+                prev->Int   = (int)prev->Float;
                 break;
             }
 
@@ -408,8 +407,8 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_ASSIGN: {
-                VmPointer ptr = AS_POINTER(Pop());
-                Value operand = Peek();
+                VmPointer ptr        = AS_POINTER(Pop());
+                Value operand        = Peek();
                 *ResolvePointer(ptr) = operand;
                 break;
             }
@@ -554,12 +553,12 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
                 m_Frame.Ip -= offset;
                 break;
             }
-            
+
             case OP_SWITCH: {
                 u16 tableEndOffset = READ_UINT16() - 8; // Skip the 2 ints to follow.
-                int min = READ_INT32();
-                int max = READ_INT32();
-                int value = AS_INT32(Pop());
+                int min            = READ_INT32();
+                int max            = READ_INT32();
+                int value          = AS_INT32(Pop());
                 int index;
                 /* JUMP TABLE
                  * [default]        << index = range + 2
@@ -588,18 +587,18 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
 
             case OP_FRAME: {
                 // Push the stack to accommodate a call frame.
-                CallFrame *frame = (CallFrame *)m_StackPtr;
+                CallFrame *frame        = (CallFrame *)m_StackPtr;
                 constexpr int frameSize = FRAME_SIZE;
                 m_StackPtr += frameSize;
                 // Store the current frame.
-                *frame = m_Frame;
+                *frame            = m_Frame;
                 m_Frame.Enclosing = frame;
                 break;
             }
 
             case OP_CALL: {
                 const int argCount = READ_BYTE();
-                Value func = Peek(argCount + 1);
+                Value func         = Peek(argCount + 1);
                 if (!Call(AS_FUNCTION(func), argCount)) {
                     // A call error occurred.
                     return;
@@ -608,9 +607,9 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
             }
 
             case OP_CALL_NATIVE: {
-                const int argCount = READ_BYTE();
-                Value func = Peek(argCount + 1);
-                NativeFuncId nativeId = (NativeFuncId) AS_NATIVE(func);
+                const int argCount    = READ_BYTE();
+                Value func            = Peek(argCount + 1);
+                NativeFuncId nativeId = (NativeFuncId)AS_NATIVE(func);
                 if (!CallNative(nativeId, argCount)) {
                     // A call error occurred.
                     return;
@@ -645,13 +644,13 @@ void MecVm::Run(ScriptInfo *script, void *sysParam) {
     }
 }
 
-void MecVm::Stop() {
+void MecVm::Stop()
+{
     m_Status = vmStop;
 }
 
-
-void MecVm::Push(const Value &data) {
-
+void MecVm::Push(const Value &data)
+{
 #ifdef STACK_BOUNDS_CHECKING
     if (m_StackPtr >= STACK_END_PTR) {
         SetStatus(vmStackOverflow);
@@ -672,8 +671,8 @@ void MecVm::Push(const Value &data) {
     ++m_StackPtr;
 }
 
-void MecVm::PushN(const u32 num) {
-
+void MecVm::PushN(const u32 num)
+{
 #ifdef STACK_BOUNDS_CHECKING
     if (m_StackPtr + num >= STACK_END_PTR) {
         SetStatus(vmStackOverflow);
@@ -691,8 +690,8 @@ void MecVm::PushN(const u32 num) {
     m_StackPtr += num;
 }
 
-Value MecVm::Pop() {
-
+Value MecVm::Pop()
+{
 #ifdef STACK_BOUNDS_CHECKING
     if (m_StackPtr <= STACK_LOCALS_START_PTR) {
         SetStatus(vmStackOverflow);
@@ -713,8 +712,8 @@ Value MecVm::Pop() {
     return *m_StackPtr;
 }
 
-Value MecVm::PopN(const u32 num) {
-
+Value MecVm::PopN(const u32 num)
+{
 #ifdef STACK_BOUNDS_CHECKING
     if ((m_StackPtr - num) < STACK_LOCALS_START_PTR)
         return *STACK_LOCALS_START_PTR;
@@ -728,8 +727,8 @@ Value MecVm::PopN(const u32 num) {
     return *m_StackPtr;
 }
 
-Value MecVm::Peek(const u32 pos) {
-
+Value MecVm::Peek(const u32 pos)
+{
 #ifdef STACK_BOUNDS_CHECKING
     if ((m_StackPtr - pos) < STACK_LOCALS_START_PTR) {
         return *STACK_LOCALS_START_PTR;
@@ -739,15 +738,15 @@ Value MecVm::Peek(const u32 pos) {
     return *(m_StackPtr - pos);
 }
 
-void MecVm::Duplicate(const u32 count) {
-
+void MecVm::Duplicate(const u32 count)
+{
     for (u32 i = 0; i < count; ++i) {
         Push(Peek(count));
     }
 }
 
-bool MecVm::Call(const funcPtr_t functionId, const int argCount) {
-
+bool MecVm::Call(const funcPtr_t functionId, const int argCount)
+{
     if (m_StackPtr >= STACK_END_PTR) {
         SetStatus(vmCallFrameOverflow);
         return false;
@@ -789,7 +788,8 @@ bool MecVm::Call(const funcPtr_t functionId, const int argCount) {
     return true;
 }
 
-bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
+bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount)
+{
     const NativeFunc nativeFunc = ResolveNativeFunction(nativeId, argCount);
     if (nativeFunc == nullptr) {
         // Function couldn't be resolved.
@@ -807,7 +807,8 @@ bool MecVm::CallNative(const NativeFuncId nativeId, const int argCount) {
     return true;
 }
 
-const char *MecVm::ResolveString(const ScriptInfo *const script, const u32 index) {
+const char *MecVm::ResolveString(const ScriptInfo *const script, const u32 index)
+{
     const u32 stringIndex = (index >> 2);
     if (script == nullptr || stringIndex > script->Strings.Count) {
         return nullptr;
@@ -816,35 +817,35 @@ const char *MecVm::ResolveString(const ScriptInfo *const script, const u32 index
     return (const char *)(script->Strings.Values + stringIndex);
 }
 
-VmStatus MecVm::SetStatus(const VmStatus status) {
-
+VmStatus MecVm::SetStatus(const VmStatus status)
+{
     m_Status = status;
     return m_Status;
 }
 
-void MecVm::Reset() {
-
+void MecVm::Reset()
+{
     if (m_Script == nullptr) {
         m_StackPtr = nullptr;
         m_StackEnd = nullptr;
     } else {
-        m_StackPtr = m_Script->Stack.Values;
-        m_StackEnd = (m_Script->Stack.Values + m_Script->Stack.Count);
-        m_Frame.Slots = m_StackPtr;
-        m_Frame.Ip = m_Script->Code.Data;
+        m_StackPtr        = m_Script->Stack.Values;
+        m_StackEnd        = (m_Script->Stack.Values + m_Script->Stack.Count);
+        m_Frame.Slots     = m_StackPtr;
+        m_Frame.Ip        = m_Script->Code.Data;
         m_Frame.Enclosing = nullptr;
     }
 }
 
-u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script) {
-
+u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stackSize, ScriptInfo *script)
+{
     if (data == nullptr || dataSize == 0 || stack == nullptr || stackSize == 0 || script == nullptr)
         return 0;
 
-    const ScriptBinaryHeader *header = (ScriptBinaryHeader *) data;
+    const ScriptBinaryHeader *header = (ScriptBinaryHeader *)data;
 
     // Validate the header
-    if (header->HeaderSize != sizeof (ScriptBinaryHeader))
+    if (header->HeaderSize != sizeof(ScriptBinaryHeader))
         return 0;
 
     // Validate the entire script will fit in the given data
@@ -862,18 +863,19 @@ u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stack
     // Stack starts from the top of the globals.
     uint32_t stackOffset = header->GlobalsSize;
     // Make sure the stack is aligned properly.
-    while ((stackOffset & 0x03) != 0) ++stackOffset;
+    while ((stackOffset & 0x03) != 0)
+        ++stackOffset;
 
-    script->Code.Data = (data + header->CodePos);
-    script->Code.Length = (header->ConstantsPos / sizeof(opCode_t));
-    script->Constants.Values = (Value *) (data + header->ConstantsPos);
-    script->Constants.Count = ((header->StringsPos - header->ConstantsPos) / sizeof(Value));
-    script->Strings.Values = (Value *) (data + header->StringsPos);
-    script->Strings.Count = ((header->TotalSize - header->StringsPos) / sizeof(Value));
-    script->Globals.Values = (Value *) stack;
-    script->Globals.Count = (header->GlobalsSize / sizeof(Value));
-    script->Stack.Values = (Value *) (stack + stackOffset);
-    script->Stack.Count = (stackSize - stackOffset) / sizeof(Value);
+    script->Code.Data        = (data + header->CodePos);
+    script->Code.Length      = (header->ConstantsPos / sizeof(opCode_t));
+    script->Constants.Values = (Value *)(data + header->ConstantsPos);
+    script->Constants.Count  = ((header->StringsPos - header->ConstantsPos) / sizeof(Value));
+    script->Strings.Values   = (Value *)(data + header->StringsPos);
+    script->Strings.Count    = ((header->TotalSize - header->StringsPos) / sizeof(Value));
+    script->Globals.Values   = (Value *)stack;
+    script->Globals.Count    = (header->GlobalsSize / sizeof(Value));
+    script->Stack.Values     = (Value *)(stack + stackOffset);
+    script->Stack.Count      = (stackSize - stackOffset) / sizeof(Value);
 
     if ((header->Flags & CompileOptions::coEmbeddedFileName) && script->Strings.Count > 0) {
         script->FileName = (char *)&script->Strings.Values[0];
@@ -884,21 +886,21 @@ u32 MecVm::DecodeScript(u8 *data, const u32 dataSize, u8 *stack, const u32 stack
     return header->TotalSize;
 }
 
-void MecVm::SetNativeFunctionResolver(ResolverFunction resolver) {
-
+void MecVm::SetNativeFunctionResolver(ResolverFunction resolver)
+{
     FunctionResolver = resolver;
 }
 
-NativeFunc MecVm::ResolveNativeFunction(const NativeFuncId funcId, const u8 argCount) {
-
+NativeFunc MecVm::ResolveNativeFunction(const NativeFuncId funcId, const u8 argCount)
+{
     if (FunctionResolver)
         return FunctionResolver(funcId, argCount);
 
     return nullptr;
 }
 
-Value *MecVm::ResolvePointer(const VmPointer &pointer) {
-
+Value *MecVm::ResolvePointer(const VmPointer &pointer)
+{
     switch (pointer.Scope) {
         case scopeStackAbsolute:
         case scopeGlobal: {
@@ -918,8 +920,8 @@ Value *MecVm::ResolvePointer(const VmPointer &pointer) {
     }
 }
 
-void MecVm::IncrementValue(const VmPointer &pointer, bool push) {
-
+void MecVm::IncrementValue(const VmPointer &pointer, bool push)
+{
     Value *value = ResolvePointer(pointer);
 
     switch (pointer.Type) {
@@ -953,8 +955,8 @@ void MecVm::IncrementValue(const VmPointer &pointer, bool push) {
         Push(*value);
 }
 
-void MecVm::DecrementValue(const VmPointer &pointer, bool push) {
-
+void MecVm::DecrementValue(const VmPointer &pointer, bool push)
+{
     Value *value = ResolvePointer(pointer);
 
     switch (pointer.Type) {

@@ -84,7 +84,6 @@ class VmPointer
 
     bool operator==(const VmPointer &other) const
     {
-
         if (Type == dtNone && other.Type == dtNone)
             return true;
         if (other.Type != Type)

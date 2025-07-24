@@ -5,8 +5,9 @@
 #ifndef TYPESYSTEM_H_
 #define TYPESYSTEM_H_
 
-#include "Value.h"
 #include "Instructions.h"
+#include "Value.h"
+
 
 enum TypeCompatibility {
     tcIncompatible,
@@ -22,19 +23,22 @@ enum TypeCompatibility {
 
 struct ExpressionTypeSet {
     opCode_t PrefixOp = OP_NOP;
-    DataType LhsType = dtNone;
-    opCode_t InfixOp = OP_NOP;
-    DataType RhsType = dtNone;
+    DataType LhsType  = dtNone;
+    opCode_t InfixOp  = OP_NOP;
+    DataType RhsType  = dtNone;
 };
 
-class TypeInfo {
-public:
-    DataType Type = dtNone;
-    TypeInfo *Enclosing = nullptr;
+class TypeInfo
+{
+  public:
+    DataType Type             = dtNone;
+    TypeInfo *Enclosing       = nullptr;
     bool IgnoreExpectingOnSet = false;
 
     TypeInfo() = default;
-    explicit TypeInfo(DataType type): Type(type) {}
+    explicit TypeInfo(DataType type) : Type(type)
+    {
+    }
 
     DataType Expecting() const;
     TypeCompatibility CheckCompatibleWith(DataType other) const;
@@ -45,4 +49,4 @@ public:
     static int GetPackedCount(DataType dataType);
 };
 
-#endif //TYPESYSTEM_H_
+#endif // TYPESYSTEM_H_

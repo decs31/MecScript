@@ -5,32 +5,36 @@
 #ifndef JUMPTABLE_H
 #define JUMPTABLE_H
 
-#include <map>
-#include "Value.h"
 #include "ScriptUtils.h"
+#include "Value.h"
+#include <map>
 
-template<typename VALUE_T, typename ADDR_T>
-class JumpTable {
 
-public:
+template <typename VALUE_T, typename ADDR_T> class JumpTable
+{
+  public:
     DataType Type;
 
     JumpTable() = default;
 
-    bool Add(VALUE_T value, ADDR_T address) {
+    bool Add(VALUE_T value, ADDR_T address)
+    {
         const auto add = m_Items.emplace(value, address);
         return add.second;
     }
 
-    int Size() {
-        return m_Items.size() * sizeof (ADDR_T);
+    int Size()
+    {
+        return m_Items.size() * sizeof(ADDR_T);
     }
 
-    int Count() {
+    int Count()
+    {
         return m_Items.size();
     }
 
-    bool Find(VALUE_T value, ADDR_T &outAddr) {
+    bool Find(VALUE_T value, ADDR_T &outAddr)
+    {
         const auto it = m_Items.find(value);
         if (it == m_Items.end()) {
             return false;
@@ -40,22 +44,24 @@ public:
         return true;
     }
 
-    VALUE_T LowestValue() {
+    VALUE_T LowestValue()
+    {
         if (m_Items.empty())
             return {};
 
         return m_Items.begin()->first;
     }
 
-    VALUE_T HighestValue() {
+    VALUE_T HighestValue()
+    {
         if (m_Items.empty())
             return {};
 
         return std::prev(m_Items.end())->first;
     }
 
-private:
+  private:
     std::map<VALUE_T, ADDR_T> m_Items;
 };
 
-#endif //JUMPTABLE_H
+#endif // JUMPTABLE_H

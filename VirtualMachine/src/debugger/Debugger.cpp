@@ -6,18 +6,18 @@
 #include "Console.h"
 #include "ScriptUtils.h"
 
-#define DBG_PRINT_VALUE_OP(op, val)      MSG(op << "(" << val << ")")
-#define DBG_READ_UINT8(codePtr)          (u32)((codePtr)[0])
-#define DBG_READ_UINT16(codePtr)         (u32)((codePtr)[0] | ((codePtr)[1] << 8))
-#define DBG_READ_UINT24(codePtr)         (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16))
-#define DBG_READ_UINT32(codePtr)         (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16) | ((codePtr)[3] << 24))
+#define DBG_PRINT_VALUE_OP(op, val) MSG(op << "(" << val << ")")
+#define DBG_READ_UINT8(codePtr)     (u32)((codePtr)[0])
+#define DBG_READ_UINT16(codePtr)    (u32)((codePtr)[0] | ((codePtr)[1] << 8))
+#define DBG_READ_UINT24(codePtr)    (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16))
+#define DBG_READ_UINT32(codePtr)    (u32)((codePtr)[0] | ((codePtr)[1] << 8) | ((codePtr)[2] << 16) | ((codePtr)[3] << 24))
 
-void Debugger::DebugInstruction(const opCode_t *codeStart, const opCode_t *code) {
-
+void Debugger::DebugInstruction(const opCode_t *codeStart, const opCode_t *code)
+{
     const size_t codePos = code - codeStart;
     PRINT("Code[" << codePos << "]: ");
 
-    const opCode_t op = code[0];
+    const opCode_t op      = code[0];
     const opCode_t *valPtr = code + 1;
 
     switch (op) {
@@ -305,9 +305,7 @@ void Debugger::DebugInstruction(const opCode_t *codeStart, const opCode_t *code)
     }
 }
 
-std::string Debugger::PrintValue(const Value &value) {
-
-    return "int: " + std::to_string(value.Int)
-            + " | float: " + std::to_string(value.Float)
-            + " | pointer: " + std::to_string(value.Pointer.Address);
+std::string Debugger::PrintValue(const Value &value)
+{
+    return "int: " + std::to_string(value.Int) + " | float: " + std::to_string(value.Float) + " | pointer: " + std::to_string(value.Pointer.Address);
 }

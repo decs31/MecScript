@@ -4,7 +4,8 @@
 
 #include "TypeSystem.h"
 
-TypeCompatibility TypeInfo::CheckCompatibility(DataType expecting, DataType input) {
+TypeCompatibility TypeInfo::CheckCompatibility(DataType expecting, DataType input)
+{
     if (input == expecting)
         return tcMatch;
 
@@ -12,41 +13,52 @@ TypeCompatibility TypeInfo::CheckCompatibility(DataType expecting, DataType inpu
         return tcNotApplicable;
 
     if (expecting >= dtBool && expecting <= dtInt32) {
-        if (input >= dtBool && input <= dtInt32) return tcMatch;
-        if (input == dtUint32) return tcCastUnsignedToSigned;
-        if (input == dtFloat) return tcCastFloatToSigned;
+        if (input >= dtBool && input <= dtInt32)
+            return tcMatch;
+        if (input == dtUint32)
+            return tcCastUnsignedToSigned;
+        if (input == dtFloat)
+            return tcCastFloatToSigned;
     }
 
     if (expecting == dtUint32) {
-        if (input == dtFloat) return tcCastFloatToUnsigned;
-        else return tcCastSignedToUnsigned;
+        if (input == dtFloat)
+            return tcCastFloatToUnsigned;
+        else
+            return tcCastSignedToUnsigned;
     }
 
     if (expecting == dtFloat) {
-        if (input >= dtBool && input <= dtInt32) return tcCastSignedToFloat;
+        if (input >= dtBool && input <= dtInt32)
+            return tcCastSignedToFloat;
         return tcCastUnsignedToFloat;
     }
 
     if (expecting == dtPointer) {
-        if (input >= dtInt8 && input <= dtInt32) return tcMatch;
-        if (input == dtFloat) return tcCastFloatToSigned;
+        if (input >= dtInt8 && input <= dtInt32)
+            return tcMatch;
+        if (input == dtFloat)
+            return tcCastFloatToSigned;
     }
 
     return tcIncompatible;
 }
 
-TypeCompatibility TypeInfo::CheckCompatibleWith(DataType other) const {
+TypeCompatibility TypeInfo::CheckCompatibleWith(DataType other) const
+{
     return CheckCompatibility(Type, other);
 }
 
-DataType TypeInfo::Expecting() const {
+DataType TypeInfo::Expecting() const
+{
     if (Enclosing != nullptr)
         return Enclosing->Type == dtNone ? Enclosing->Expecting() : Enclosing->Type;
 
     return Type;
 }
 
-int TypeInfo::GetByteSize(DataType dataType) {
+int TypeInfo::GetByteSize(DataType dataType)
+{
     switch (dataType) {
         case dtBool:
         case dtInt8:
@@ -62,12 +74,12 @@ int TypeInfo::GetByteSize(DataType dataType) {
     }
 }
 
-int TypeInfo::ByteSize() const {
-
+int TypeInfo::ByteSize() const
+{
     return GetByteSize(Type);
 }
 
-int TypeInfo::GetPackedCount(DataType dataType) {
-
+int TypeInfo::GetPackedCount(DataType dataType)
+{
     return (int)sizeof(Value) / GetByteSize(dataType);
 }

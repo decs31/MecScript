@@ -13,8 +13,8 @@
 
 enum CompileOptions : u32 {
     coEmbeddedFileName = 0x01,
-    coShortAddressing = 0x02,
-    coDecompileResult = 0x04,
+    coShortAddressing  = 0x02,
+    coDecompileResult  = 0x04,
 };
 
 struct CodeData {

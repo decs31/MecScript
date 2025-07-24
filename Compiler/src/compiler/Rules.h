@@ -17,35 +17,36 @@ enum ParseFunc {
     fnVariable,
     fnAnd,
     fnOr,
-    fnTernary,          // ?
+    fnTernary, // ?
     fnCall,
     fnArrayIndex,
-    fnVariablePrefix,   // ++ --
-    fnVariablePostfix,  // ++ --
+    fnVariablePrefix,  // ++ --
+    fnVariablePostfix, // ++ --
 };
 
 enum Precedence {
     precNone = 0,
-    precAssignment,     // = += -= *= /=
-    precTernary,        // ?
-    precOr,             // or
-    precAnd,            // and
-    precEquality,       // == !=
-    precComparison,     // < > <= >=
-    precTerm,           // + -
-    precFactor,         // * / %
-    precUnary,          // ! -- ++
-    precCall,           // . [] ()
+    precAssignment, // = += -= *= /=
+    precTernary,    // ?
+    precOr,         // or
+    precAnd,        // and
+    precEquality,   // == !=
+    precComparison, // < > <= >=
+    precTerm,       // + -
+    precFactor,     // * / %
+    precUnary,      // ! -- ++
+    precCall,       // . [] ()
 };
 
 struct ParseRule {
     ParseFunc Prefix = fnNone;
-    ParseFunc Infix = fnNone;
-    Precedence Prec = precNone;
+    ParseFunc Infix  = fnNone;
+    Precedence Prec  = precNone;
 };
 
-namespace Rules {
+namespace Rules
+{
     ParseRule Get(TokenType tokenType);
 }
 
-#endif //RULES_H
+#endif // RULES_H

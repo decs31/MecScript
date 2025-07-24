@@ -133,7 +133,7 @@ enum OpCode : opCode_t {
 
     // Reserved
     OP_FUNCTION_START = 254,
-    OP_END = 255
+    OP_END            = 255
 };
 
 #endif // INSTRUCTIONS_H

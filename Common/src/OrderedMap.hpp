@@ -10,11 +10,10 @@
 
 template <typename TKey, typename TValue> class OrderedMap
 {
-
   public:
     typedef bool (*Predicate)(TValue &value);
 
-    OrderedMap() = default;
+    OrderedMap()  = default;
     ~OrderedMap() = default;
 
     size_t Size()
@@ -24,8 +23,7 @@ template <typename TKey, typename TValue> class OrderedMap
 
     bool Add(const TKey &key, const TValue &value)
     {
-
-        size_t index = m_Items.size();
+        size_t index           = m_Items.size();
         const auto [it, added] = m_ItemMap.insert(key, index);
         if (!added) {
             return false;

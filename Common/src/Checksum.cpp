@@ -8,7 +8,6 @@
 
 u32 Checksum::Calculate(const u8 *data, const u32 length)
 {
-
     /*
      * Checksum is initially done in 4 byte words.
      * Any bytes outside the 4 byte boundary are done separately.
@@ -18,8 +17,8 @@ u32 Checksum::Calculate(const u8 *data, const u32 length)
         return 0;
     }
 
-    u32 checksum = length;
-    u32 *words = (u32 *)data;
+    u32 checksum        = length;
+    u32 *words          = (u32 *)data;
     const u32 wordCount = length / sizeof(u32);
 
     for (u32 i = 0; i < wordCount; ++i) {

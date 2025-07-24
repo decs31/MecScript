@@ -10,14 +10,13 @@
 #include <string>
 
 enum VariableFlags : u32 {
-
-    vfNormal = 0x00,
-    vfArray = 0x01,
-    vfClass = 0x02,
+    vfNormal   = 0x00,
+    vfArray    = 0x01,
+    vfClass    = 0x02,
     vfFunction = 0x04,
-    vfField = 0x08,
-    vfPointer = 0x10,
-    vfConst = 0x20,
+    vfField    = 0x08,
+    vfPointer  = 0x10,
+    vfConst    = 0x20,
 };
 
 struct ConstantInfo {
@@ -114,12 +113,12 @@ struct VariableInfo {
     VmPointer Pointer;
     u32 Flags; // VariableFlags
     int ParentAddress = 0;
-    int MemberIndex = 0;
-    int MemberDepth = 0;
-    int Depth = NOT_SET;
-    int Reads = 0;
-    int Writes = 0;
-    int Size = 1;
+    int MemberIndex   = 0;
+    int MemberDepth   = 0;
+    int Depth         = NOT_SET;
+    int Reads         = 0;
+    int Writes        = 0;
+    int Size          = 1;
 
     DataType Type() const
     {

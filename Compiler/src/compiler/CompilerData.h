@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-
 struct StringData {
     uint32_t Index;
     uint32_t Length;

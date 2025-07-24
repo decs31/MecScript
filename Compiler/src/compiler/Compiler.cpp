@@ -193,13 +193,14 @@ StatusCode Compiler::Compile()
     return SetResult(stsCompileDone, "Compile Done");
 }
 
-bool Compiler::CheckNativeFunction(const Token &token) {
+bool Compiler::CheckNativeFunction(const Token &token)
+{
     if (m_NativeFuncs == nullptr) {
         return false;
     }
 
     auto nfMap = m_NativeFuncs->Functions();
-    auto nf = nfMap.find(token.Value);
+    auto nf    = nfMap.find(token.Value);
     if (nf != nfMap.end())
         return true;
 
@@ -2349,7 +2350,7 @@ NativeFuncInfo *Compiler::ResolveNativeFunction(const std::string &name)
         return nullptr;
     }
 
-    auto &nfMap = m_NativeFuncs->Functions();
+    auto &nfMap   = m_NativeFuncs->Functions();
     const auto nf = nfMap.find(name);
     if (nf != nfMap.end()) {
         return &nf->second;

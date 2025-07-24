@@ -9,7 +9,7 @@
 #include <iostream>
 
 #if (VERBOSE_OUTPUT == 1)
-#define MSG_V(msg)                          \
+#define MSG_V(msg)                      \
     if (Console::VerboseOutput == true) \
     std::cout << msg << std::endl
 #else

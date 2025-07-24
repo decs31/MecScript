@@ -9,7 +9,6 @@
 #include "ScriptInfo.h"
 #include "Value.h"
 
-
 enum NativeFuncId : u8 {
     nfNull = 0,
     nfPrint,

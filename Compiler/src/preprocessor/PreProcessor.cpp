@@ -14,6 +14,5 @@ PreProcessor::~PreProcessor()
 
 StatusCode PreProcessor::Run(const std::vector<Token> &tokens)
 {
-
     return stsOk;
 }

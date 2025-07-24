@@ -16,6 +16,5 @@ VmPointer::VmPointer(u16 address, DataType type, VarScopeType scope) : Address(a
 
 VmPointer VmPointer::Null()
 {
-
     return {};
 }

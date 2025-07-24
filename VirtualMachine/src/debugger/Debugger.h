@@ -5,16 +5,17 @@
 #ifndef DEBUGGER_H_
 #define DEBUGGER_H_
 
-
-#include <string>
-#include <iostream>
 #include "Instructions.h"
 #include "Value.h"
+#include <iostream>
+#include <string>
 
-namespace Debugger {
+
+namespace Debugger
+{
     void DebugInstruction(const opCode_t *codeStart, const opCode_t *code);
 
     std::string PrintValue(const Value &value);
 }
 
-#endif //DEBUGGER_H_
+#endif // DEBUGGER_H_

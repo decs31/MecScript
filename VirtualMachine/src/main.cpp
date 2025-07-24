@@ -2,22 +2,21 @@
 // Created by Declan Walsh on 18/02/2024.
 //
 
-#include <iostream>
-#include <winerror.h>
-#include <fstream>
-#include <chrono>
-#include <cstring>
-#include <thread>
-
+#include "Console.h"
+#include "MecVm.h"
 #include "Options.h"
 #include "VmConfig.h"
-#include "MecVm.h"
-#include "Console.h"
+#include <chrono>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <thread>
+#include <winerror.h>
 
 #define STACK_SIZE 0x1000
 
-static Value NativePrint(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
-
+static Value NativePrint(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
@@ -29,8 +28,8 @@ static Value NativePrint(const ScriptInfo *const script, void *sysParam, const i
     return BOOL_VAL(true);
 }
 
-static Value NativePrintLine(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
-
+static Value NativePrintLine(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
@@ -42,8 +41,8 @@ static Value NativePrintLine(const ScriptInfo *const script, void *sysParam, con
     return BOOL_VAL(true);
 }
 
-static Value NativePrintI(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
-
+static Value NativePrintI(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
@@ -54,8 +53,8 @@ static Value NativePrintI(const ScriptInfo *const script, void *sysParam, const 
     return BOOL_VAL(true);
 }
 
-static Value NativePrintF(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
-
+static Value NativePrintF(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 1) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
@@ -66,15 +65,15 @@ static Value NativePrintF(const ScriptInfo *const script, void *sysParam, const 
     return BOOL_VAL(true);
 }
 
-static Value NativePrintFormat(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
-
+static Value NativePrintFormat(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 2) {
         MSG("Print Error! Nothing to print.");
         return BOOL_VAL(false);
     }
 
     const char *chars = MecVm::ResolveString(script, AS_UINT32(args[0]));
-    float val = AS_FLOAT(args[1]);
+    float val         = AS_FLOAT(args[1]);
     char strBuf[256 + 32];
     if (strlen(chars) > 256) {
         MSG("Print Error! String too long.");
@@ -86,25 +85,27 @@ static Value NativePrintFormat(const ScriptInfo *const script, void *sysParam, c
     return BOOL_VAL(true);
 }
 
-using Clock = std::chrono::steady_clock;
-using nanos = std::chrono::nanoseconds;
-using millis = std::chrono::milliseconds;
-template<class Duration>
-using TimePoint = std::chrono::time_point<Clock, Duration>;
+using Clock                               = std::chrono::steady_clock;
+using nanos                               = std::chrono::nanoseconds;
+using millis                              = std::chrono::milliseconds;
+template <class Duration> using TimePoint = std::chrono::time_point<Clock, Duration>;
 static nanos ClockStartTime;
 
-static long long int Millis() {
-    const auto now = Clock::now().time_since_epoch() - ClockStartTime;
+static long long int Millis()
+{
+    const auto now         = Clock::now().time_since_epoch() - ClockStartTime;
     const long long int ms = now.count() / 1000000;
     return ms;
 }
 
-static Value NativeClock(const ScriptInfo *const script, void *sysParam, int argCount, Value *args) {
+static Value NativeClock(const ScriptInfo *const script, void *sysParam, int argCount, Value *args)
+{
     const auto ms = Millis();
-    return INT32_VAL((int) ms);
+    return INT32_VAL((int)ms);
 }
 
-static Value NativeYield(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+static Value NativeYield(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 1) {
         MSG("Yield Error! No time given.");
     }
@@ -121,13 +122,14 @@ static Value NativeYield(const ScriptInfo *const script, void *sysParam, const i
     return BOOL_VAL(true);
 }
 
-static Value NativeYieldUntil(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+static Value NativeYieldUntil(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     if (argCount < 2) {
         MSG("Yield Error! No time given.");
     }
 
     long long int lastTime = AS_UINT32(args[0]);
-    long long int delay = AS_UINT32(args[1]);
+    long long int delay    = AS_UINT32(args[1]);
 
     MSG("Yield(" << delay << ")");
 
@@ -140,13 +142,14 @@ static Value NativeYieldUntil(const ScriptInfo *const script, void *sysParam, co
     return UINT32_VAL(lastTime);
 }
 
-static Value NativeDummy(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args) {
+static Value NativeDummy(const ScriptInfo *const script, void *sysParam, const int argCount, Value *args)
+{
     MSG("Native Function not defined");
     return BOOL_VAL(false);
 }
 
-static NativeFunc ResolveNativeFunction(const NativeFuncId funcId, const u8 argCount) {
-
+static NativeFunc ResolveNativeFunction(const NativeFuncId funcId, const u8 argCount)
+{
     NativeFunc func = nullptr;
 
     switch (funcId) {
@@ -190,9 +193,8 @@ static NativeFunc ResolveNativeFunction(const NativeFuncId funcId, const u8 argC
     return func;
 }
 
-
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     ClockStartTime = Clock::now().time_since_epoch();
 
     std::string inputFilePath;
@@ -205,7 +207,7 @@ int main(int argc, char *argv[]) {
             MSG("Verbose Output = On");
             Console::VerboseOutput = true;
         }
-            // Input path
+        // Input path
         else if (inputFilePath.empty()) {
             inputFilePath = arg;
         }

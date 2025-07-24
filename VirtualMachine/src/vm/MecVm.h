@@ -5,17 +5,16 @@
 #ifndef MECVM_H
 #define MECVM_H
 
-#include "Value.h"
 #include "Instructions.h"
 #include "NativeFunctions.h"
 #include "ScriptInfo.h"
+#include "Value.h"
 
 /* MUST BE INCLUDED BY APPLICATION */
 #include "VmConfig.h"
 /* =============================== */
 
-#define VIRTUAL_MACHINE_NAME        "MecVm"
-
+#define VIRTUAL_MACHINE_NAME "MecVm"
 
 enum VmStatus {
     vmOk = 0,
@@ -37,8 +36,9 @@ enum VmStatus {
 };
 
 /* Virtual Machine */
-class MecVm {
-public:
+class MecVm
+{
+  public:
     MecVm();
     ~MecVm();
 
@@ -57,7 +57,7 @@ public:
 
     static const char *ResolveString(const ScriptInfo *const script, const u32 index);
 
-private:
+  private:
     volatile VmStatus m_Status = vmOk;
 
     struct CallFrame {
@@ -67,8 +67,8 @@ private:
     };
 
     void *m_SystemParameter = nullptr;
-    Value *m_StackPtr = nullptr;
-    Value *m_StackEnd = nullptr;
+    Value *m_StackPtr       = nullptr;
+    Value *m_StackEnd       = nullptr;
 
     ScriptInfo *m_Script = nullptr;
 
@@ -93,5 +93,4 @@ private:
     VmStatus SetStatus(VmStatus status);
 };
 
-
-#endif //MECVM_H
+#endif // MECVM_H
