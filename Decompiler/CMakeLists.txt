@@ -8,6 +8,7 @@ set(PROJECT_NAME MecDecompile)
 add_executable(${PROJECT_NAME}
         src/main.cpp
         ../Compiler/src/utils/Disassembler.cpp
+        ../Common/src/Checksum.cpp
 )
 
 include_directories(${PROJECT_NAME}
