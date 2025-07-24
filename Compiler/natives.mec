@@ -1,35 +1,31 @@
-// Print
-[native 1] void Print(string str);
+/* MecScript Native Functions Example
+ * These function signatures are used to perform tasks in the virtual machines native environment.
+ * It's assumed that the native function resolver in the MecScript VM will handle these signatures.
+ *
+ * Each function must be marked with a [native #] attribute containing a unique identifier number.
+ * The identifiers are used to map these functions to their implementations in the MecScript VM.
+ */
 
-// Print Line
-[native 2] void PrintLn(string str);
+// Print - This function prints a string to the VM host's stdout.
+[native 1] void print(string str);
 
-// Print Integer
-[native 3] void PrintI(int i);
+// Print Line - Prints a string followed by a newline to the VM host's stdout.
+[native 2] void println(string str);
 
-// Print Float
-[native 4] void PrintF(float f);
+// Print Integer - Prints an integer to the VM host's stdout.
+[native 3] void printi(int i);
 
-// Print Format
-[native 5] void PrintFmt(string str, float f);
+// Print Float - Prints a float to the VM host's stdout.
+[native 4] void printf(float f);
 
-// Clock
-[native 6] int Clock();
+// Print Format - Prints a formatted string with a float value to the VM host's stdout. Eg: printfmt("Value: %f", 3.14);
+[native 5] void printfmt(string str, float f);
 
-// Yield For
-[native 7] void Yield(uint t);
+// Clock - Returns the current host environment's clock time. Typically in milliseconds.
+[native 6] int clock();
 
-// Yield Until
-[native 8] void YieldUntil(uint t);
+// Yield - Yield for a specified time in milliseconds, allowing the VM to pause execution.
+[native 7] void yield(uint t);
 
-// Read Runtime
-[native 9] int ReadRuntime(uint id);
-
-// Read Runtime Real
-[native 10] float ReadRuntimeReal(uint id);
-
-// Write Runtime
-[native 11] void WriteRuntime(uint id, int val);
-
-// Write Runtime Real
-[native 12] void WriteRuntimeReal(uint id, float val);
+// Yield Until - Yield execution until a specified time in milliseconds.
+[native 8] void yieldUntil(uint t);
